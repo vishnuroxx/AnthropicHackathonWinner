@@ -384,6 +384,16 @@ if res and res.get("row_id") == row_id:
 # 8. Evaluation
 ev = RESULTS / "eval_summary.json"
 if ev.exists():
-    with st.expander("How well does it work? (tested on many flights)"):
+    with st.expander("How well does it work? (tested on many flights)", expanded=True):
         data = json.loads(ev.read_text())
-        st.table(data if isinstance(data, list) else [data])
+        d = data[0] if isinstance(data, list) else data
+        n = d.get("flights", 0)
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Flights tested", n, help="Real 2015 DFW disruptions")
+        c1.caption(f"{d.get('weather', 0)} weather · {d.get('late_aircraft', 0)} late aircraft")
+        c2.metric("Teams agreed", f"{d.get('consensus_pct', 0):.0f}%")
+        c2.caption(f"{d.get('consensus', 0)} of {n} within 3 rounds")
+        c3.metric("Unsafe plans chosen", d.get("unsafe_plans_chosen", 0))
+        c3.caption("Code checks every safety rule — must be 0")
+        c4.metric("No deal / no safe plan", d.get("no_consensus_or_no_valid_plan", 0))
+        c4.caption(f"Shown honestly · {d.get('errors', 0)} crashes. Try AA1480 or AA98 in the sidebar")
