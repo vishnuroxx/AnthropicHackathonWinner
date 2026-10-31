@@ -27,11 +27,11 @@ SHOWN_COLS = ["AIRLINE", "FLIGHT_NUMBER", "TAIL_NUMBER", "ORIGIN_AIRPORT", "DEST
 
 # Workflow from CLAUDE.md §5: (title, who, what happens)
 STAGES = [
-    ("① Event", "code", "A flights.csv row becomes a disruption; build_world() creates the world state"),
-    ("② Parallel analysis", "ATC · Pilot · Ground", "Three separate LLM calls, each sees only its own facts, return a preferred plan"),
-    ("③ Negotiation", "middleman (code)", "Every plan is checked and costed; cheapest valid plan goes on the table; max 3 rounds, else least-cost fallback"),
-    ("④ Decision document", "LLM narrative + code numbers", "Written only from the structured log"),
-    ("⑤ Human decision", "duty manager", "Approve or Reject; the choice is logged"),
+    ("1. Disruption", "real 2015 flight", "A delayed flight comes in"),
+    ("2. Each team weighs in", "ATC · Pilot · Ground", "Each team suggests what works best for them"),
+    ("3. Agree on a plan", "safety-checked", "Unsafe plans are thrown out; the teams settle on one in 3 rounds or less"),
+    ("4. Recommendation", "explained", "A plain-English summary of what and why"),
+    ("5. Your call", "duty manager", "You approve or reject"),
 ]
 PULSE_CSS = """<style>
 @keyframes pulse {0%,100%{box-shadow:0 0 0 0 rgba(255,170,0,.6)} 50%{box-shadow:0 0 0 8px rgba(255,170,0,0)}}
@@ -140,8 +140,11 @@ def plan_line(p):
     return " · ".join(bits)
 
 
-ROUND_TITLES = {1: "Round 1 — each agent proposes its favourite plan", 2: "Round 2 — each agent scores the picked plan",
-                3: "Round 3 — final vote on the picked plan"}
+ROUND_TITLES = {1: "Round 1 — each team suggests a plan", 2: "Round 2 — each team rates the options",
+                3: "Round 3 — final yes/no vote"}
+ACTIONS = {"propose": "Suggested", "score": "Rated", "accept": "✅ Agreed", "counter": "↩️ Countered",
+           "reject": "❌ Rejected"}
+TEAM = {"atc": "🗼 Air traffic control", "pilot": "👨‍✈️ Pilot", "ground": "🧳 Ground crew"}
 
 
 # Renders the negotiation log as one compact table per round (agent, action, plan, safety check, reason).
@@ -154,12 +157,12 @@ def render_log(log):
             if not c:
                 check = "—"
             elif c.get("valid"):
-                check = "✅ safe" + (f" · ${c['cost']:,.0f}" if isinstance(c.get("cost"), (int, float)) else "")
+                check = "✅ yes" + (f" · ${c['cost']:,.0f}" if isinstance(c.get("cost"), (int, float)) else "")
             else:
                 check = "❌ " + "; ".join(str(v).split(":")[0] for v in c.get("violations") or ["invalid"])
-            rows.append({"Agent": e["agent"].upper(), "Action": m.get("action", "?"),
+            rows.append({"Team": TEAM.get(e["agent"], e["agent"]), "Did": ACTIONS.get(m.get("action"), m.get("action", "?")),
                          "Plan": (f"{m['plan_id']}: " if m.get("plan_id") else "") + plan_line(m.get("plan")),
-                         "Safety check": check, "Why": m.get("reason", "")})
+                         "Safe?": check, "Why": m.get("reason", "")})
         st.dataframe(rows, hide_index=True, width="stretch",
                      column_config={"Why": st.column_config.TextColumn(width="large")})
 
@@ -184,14 +187,38 @@ def template_document(res):
     return "\n\n".join(lines)
 
 
+# Shows the plan's impact (delay vs schedule, cost) and each team's final word, in plain language.
+def render_summary(res, row):
+    p, log = res.get("final_plan") or {}, res.get("log", [])
+    c = next((e.get("checker") for e in reversed(log) if (e.get("checker") or {}).get("cost") is not None), {}) or {}
+    m1, m2, m3 = st.columns(3)
+    slot = p.get("arrival_slot")
+    if slot and not p.get("divert"):
+        sched = int(str(row["SCHEDULED_ARRIVAL"]).zfill(4)[:2]) * 60 + int(str(row["SCHEDULED_ARRIVAL"]).zfill(4)[2:])
+        h, mm = map(int, slot.split(":"))
+        m1.metric("Lands", slot, f"{h * 60 + mm - sched} min late", delta_color="inverse")
+    m2.metric("Gate", p.get("gate") or "—")
+    if isinstance(c.get("cost"), (int, float)):
+        m3.metric("Estimated cost", f"${c['cost']:,.0f}")
+    last = {}
+    for e in log:
+        last[e["agent"]] = e
+    cols = st.columns(max(len(last), 1))
+    for col, (a, e) in zip(cols, last.items()):
+        msg = e.get("message") or {}
+        col.markdown(f"**{TEAM.get(a, a)}** — {ACTIONS.get(msg.get('action'), msg.get('action', ''))}")
+        col.caption(msg.get("reason", ""))
+
+
 load_dotenv(ROOT / ".env.local")
 load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="ATC · Pilot · Ground", layout="wide")
-st.title("ATC · Pilot · Ground — Disruption Negotiation")
+st.title("✈️ Flight Disruption Assistant")
+st.caption("Air traffic control, the pilot and the ground crew agree on a recovery plan. You make the final call.")
 
 with st.sidebar:
-    row_id = st.selectbox("Demo disruption", list(DEMO_ROWS), format_func=lambda k: DEMO_ROWS[k]["label"])
-    use_cache = st.toggle("Use cached result", value=True)
+    row_id = st.selectbox("Pick a disrupted flight", list(DEMO_ROWS), format_func=lambda k: DEMO_ROWS[k]["label"])
+    use_cache = st.toggle("Instant replay (saved run)", value=True)
 spec = DEMO_ROWS[row_id]
 if st.session_state.get("row_id") != row_id:
     st.session_state.update(row_id=row_id, stage=0)
@@ -202,24 +229,24 @@ render_stages(stage_slot, st.session_state["stage"])
 
 # 3. Disruption panel
 row = load_row(spec["airline"], spec["flight_number"], spec["origin"])
-st.subheader("Disruption")
+st.subheader("What happened")
 if row is None:
     st.error("Row not found in flights.csv")
     st.stop()
 w, l = float(row["WEATHER_DELAY"] or 0), float(row["LATE_AIRCRAFT_DELAY"] or 0)
-event = f"Weather (+{w:g} min)" if w > 15 else f"Late-arriving aircraft (+{l:g} min)"
+event = f"Bad weather · {w:g} min late" if w > 15 else f"Plane arrived late · {l:g} min"
 c1, c2, c3 = st.columns(3)
-c1.metric("Event", event)
+c1.metric("Problem", event)
 c2.metric("Flight", f"{row['AIRLINE']}{row['FLIGHT_NUMBER']} · {row['TAIL_NUMBER']}")
 c3.metric("Route", f"{row['ORIGIN_AIRPORT']} → {row['DESTINATION_AIRPORT']}")
-st.write(f"Scheduled departure **{hhmm(row['SCHEDULED_DEPARTURE'])}**, arrival **{hhmm(row['SCHEDULED_ARRIVAL'])}**, "
-         f"block {row['SCHEDULED_TIME']} min, {row['DISTANCE']} mi — {MONTH}/{DAY}/2015 (real DOT data)")
-with st.expander("Key constraints and assumptions (synthetic inputs are labelled)"):
+st.write(f"Was due to leave at **{hhmm(row['SCHEDULED_DEPARTURE'])}** and land at **{hhmm(row['SCHEDULED_ARRIVAL'])}** "
+         f"on {DAY} Apr 2015 (real flight record).")
+with st.expander("Limits we have to respect"):
     for label, val in key_constraints(spec["airline"], spec["flight_number"], spec["origin"]):
         st.write(f"- **{label}:** {val}")
 
 # 4. Run
-if st.button("Run negotiation", type="primary"):
+if st.button("Find a recovery plan", type="primary"):
     try:
         render_stages(stage_slot, 1)  # parallel analysis
         if use_cache:
@@ -231,7 +258,7 @@ if st.button("Run negotiation", type="primary"):
                 render_stages(stage_slot, 2)  # negotiation
                 time.sleep(1.0)
         else:
-            with st.spinner("Agents negotiating (live)…"):
+            with st.spinner("The three teams are talking it through…"):
                 res = run_live(row_id)
         if res:
             st.session_state.update(result=res, stage=3)
@@ -245,15 +272,16 @@ if st.button("Run negotiation", type="primary"):
 res = st.session_state.get("result")
 if res and res.get("row_id") == row_id:
     # 6. Outcome first: what was decided, then the human decision, then the supporting detail.
-    st.subheader("Recommendation")
+    st.subheader("Recommended plan")
     if res.get("outcome") == "consensus":
-        st.success(f"Consensus in {res.get('rounds')} rounds: all three agents accepted the plan.")
+        st.success(f"✅ All three teams agreed (after {res.get('rounds')} rounds). Every safety check passed.")
     elif res.get("final_plan"):
-        st.warning("No consensus → deterministic least-cost fallback (non-AI) chose the plan.")
+        st.warning("The teams did not agree, so the system picked the cheapest safe plan automatically.")
     else:
-        st.error("No safe plan exists within the constraints → the system recommends cancellation to the duty manager.")
+        st.error("No safe plan exists. The system suggests cancelling this flight. Your decision.")
     if res.get("final_plan"):
         st.markdown(f"### {plan_line(res.get('final_plan'))}")
+        render_summary(res, row)
     a, b, _ = st.columns([1, 1, 4])
     for label, past, col in (("Approve", "Approved", a), ("Reject", "Rejected", b)):
         if col.button(label, key=label):
@@ -265,16 +293,14 @@ if res and res.get("row_id") == row_id:
         st.info(f"{d['decision']} at {d['at']}")
 
     # 7. Supporting detail, collapsed by default
-    with st.expander("Decision document: how and why (read this to verify)"):
+    with st.expander("Read the full explanation"):
         st.markdown(res.get("document") or template_document(res))
-    with st.expander("Full negotiation log (every message, safety check and vote)"):
+    with st.expander("Show every message (audit trail)"):
         render_log(res.get("log", []))
 
 # 8. Evaluation
-with st.expander("Evaluation"):
-    ev = RESULTS / "eval_summary.json"
-    if ev.exists():
+ev = RESULTS / "eval_summary.json"
+if ev.exists():
+    with st.expander("How well does it work? (tested on many flights)"):
         data = json.loads(ev.read_text())
         st.table(data if isinstance(data, list) else [data])
-    else:
-        st.write("No eval summary yet — run `evaluate.py`.")
