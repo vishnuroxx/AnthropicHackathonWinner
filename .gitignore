@@ -39,3 +39,7 @@ docs/research/
 
 # Local LLM call logs
 logs/
+
+# Local BMAD skills (not shared)
+.agents/
+skills-lock.json
