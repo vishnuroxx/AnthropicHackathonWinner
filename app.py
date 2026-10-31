@@ -36,7 +36,7 @@ STAGES = [
 ]
 PULSE_CSS = """<style>
 @keyframes pulse {0%,100%{box-shadow:0 0 0 0 rgba(255,170,0,.6)} 50%{box-shadow:0 0 0 8px rgba(255,170,0,0)}}
-.stApp{background:linear-gradient(180deg,#eef4fb 0%,#f8fafc 40%,#ffffff 100%)}
+.stApp{background-color:#f4f7fb;background-image:radial-gradient(circle at 12% 8%,#dbe8fa 0,transparent 35%),radial-gradient(circle at 90% 30%,#e8e2fb 0,transparent 30%),radial-gradient(#c9d6e822 1px,transparent 1px);background-size:auto,auto,22px 22px;background-attachment:fixed}.lim{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.lim div{background:#f8fafd;border:1px solid #e3e9f1;border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}.lim .k{font-size:.78rem;color:#667;text-transform:uppercase;letter-spacing:.03em}.lim .v{font-size:1.05rem;font-weight:600;color:#1b2a41;margin-top:2px}.tag{display:inline-block;font-size:.7rem;font-weight:500;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:middle}.t-sim{background:#fff3e0;color:#b25e00}.t-real{background:#e3f2fd;color:#0d47a1}
 [data-testid="stExpander"]{background:#fff;border-radius:12px}
 .st-box{flex:1 1 0;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid #d6dee8;background:#fff;
   font-size:.85rem;line-height:1.3;overflow-wrap:anywhere;box-shadow:0 1px 3px #0001}
@@ -71,7 +71,7 @@ def hhmm(v):
 # Reads the scheduled (non-outcome) fields of one demo row from flights.csv.
 # Args: spec - a DEMO_ROWS entry.
 # Returns: dict of SHOWN_COLS, or None if the row is missing.
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_row(airline, flight_number, origin):
     with open(FLIGHTS, newline="") as f:
         for r in csv.DictReader(f):
@@ -83,7 +83,7 @@ def load_row(airline, flight_number, origin):
 
 # Gathers the key constraints (holdable fuel, gate, slot capacity) from the agents' world builders.
 # Returns: list of (label, value) pairs; empty if the builders fail.
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def key_constraints(airline, flight_number, origin):
     try:
         from agents.constraints import fuel_crew_rules
@@ -284,8 +284,15 @@ c3.metric("Route", f"{row['ORIGIN_AIRPORT']} → {row['DESTINATION_AIRPORT']}")
 st.write(f"Was due to leave at **{hhmm(row['SCHEDULED_DEPARTURE'])}** and land at **{hhmm(row['SCHEDULED_ARRIVAL'])}** "
          f"on {DAY} Apr 2015 (real flight record).")
 with st.expander("Limits we have to respect"):
+    icons = {"Holdable": "⛽", "Scheduled": "🚪", "Free": "🟢", "Slot": "🛬", "Connecting": "🧑‍🤝‍🧑", "Ground": "👷"}
+    cells = []
     for label, val in key_constraints(spec["airline"], spec["flight_number"], spec["origin"]):
-        st.write(f"- **{label}:** {val}")
+        sim = "(synthetic)" in val
+        clean = html.escape(val.replace(" (synthetic)", "").replace(" (derived)", "").replace(" (workbook)", ""))
+        tag = '<span class="tag t-sim">simulated</span>' if sim else '<span class="tag t-real">real rule</span>'
+        icon = icons.get(label.split()[0], "•")
+        cells.append(f'<div><div class="k">{icon} {html.escape(label)}{tag}</div><div class="v">{clean}</div></div>')
+    st.markdown('<div class="lim">' + "".join(cells) + "</div>", unsafe_allow_html=True)
 
 # 4. Run
 if st.button("Find a recovery plan", type="primary"):
