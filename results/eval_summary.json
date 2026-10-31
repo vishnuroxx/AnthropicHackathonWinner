@@ -1,0 +1,18 @@
+[
+ {
+  "flights": 30,
+  "weather": 15,
+  "late_aircraft": 15,
+  "consensus": 26,
+  "consensus_pct": 86.7,
+  "no_consensus_or_no_valid_plan": 4,
+  "errors": 0,
+  "unsafe_plans_chosen": 0,
+  "avg_cost_agents_usd": 5858.0,
+  "avg_cost_fallback_usd": 5327.23,
+  "agents_cost_le_fallback": 8,
+  "agents_cost_gt_fallback": 18,
+  "mode": "live (round-3 votes by Claude agents)",
+  "seconds": 182
+ }
+]

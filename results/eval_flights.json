@@ -1,0 +1,502 @@
+[
+ {
+  "flight": "DFW-20150424-AA243",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 10036.25,
+  "agents_plan_cost": 10315.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "21:01",
+   "ground_delay_min": 46,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1568",
+  "event": "weather",
+  "outcome": "no_valid_plan",
+  "fallback_outcome": "recommend_cancel",
+  "fallback_cost": null
+ },
+ {
+  "flight": "DFW-20150424-AA388",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 3543.0,
+  "agents_plan_cost": 4810.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "18:08",
+   "ground_delay_min": 28,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1292",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 671.25,
+  "agents_plan_cost": 748.25,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "15:36",
+   "ground_delay_min": 1,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1329",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 9220.75,
+  "agents_plan_cost": 9466.75,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "13:54",
+   "ground_delay_min": 35,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-MQ3326",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 14659.75,
+  "agents_plan_cost": 15933.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "19:56",
+   "ground_delay_min": 39,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1402",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 7500.5,
+  "agents_plan_cost": 8254.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "21:19",
+   "ground_delay_min": 39,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA334",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 10598.0,
+  "agents_plan_cost": 11166.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "13:49",
+   "ground_delay_min": 54,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1304",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 3347.0,
+  "agents_plan_cost": 3522.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "18:21",
+   "ground_delay_min": 36,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-MQ3252",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 16668.75,
+  "agents_plan_cost": 18040.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "11:23",
+   "ground_delay_min": 14,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1689",
+  "event": "weather",
+  "outcome": "no_consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 6111.0,
+  "agents_plan_cost": 6177.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "22:00",
+   "ground_delay_min": 72,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "A12",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1228",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 12948.25,
+  "agents_plan_cost": 14218.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "13:00",
+   "ground_delay_min": 24,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1389",
+  "event": "weather",
+  "outcome": "no_consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 12307.0,
+  "agents_plan_cost": 12307.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "19:47",
+   "ground_delay_min": 119,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-MQ3053",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 9423.0,
+  "agents_plan_cost": 10494.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "14:09",
+   "ground_delay_min": 84,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-MQ2947",
+  "event": "weather",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 11764.5,
+  "agents_plan_cost": 12552.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "13:52",
+   "ground_delay_min": 92,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1213",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 2101.5,
+  "agents_plan_cost": 2228.75,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "18:24",
+   "ground_delay_min": 11,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1527",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 1640.75,
+  "agents_plan_cost": 1728.25,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "18:31",
+   "ground_delay_min": 9,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1242",
+  "event": "late_aircraft",
+  "outcome": "no_consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 11802.0,
+  "agents_plan_cost": 11802.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "21:02",
+   "ground_delay_min": 44,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "A12",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA357",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 2665.25,
+  "agents_plan_cost": 2670.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "18:36",
+   "ground_delay_min": 22,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "A12",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA2330",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 884.75,
+  "agents_plan_cost": 928.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "14:44",
+   "ground_delay_min": 6,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1150",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 1691.5,
+  "agents_plan_cost": 1691.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "15:56",
+   "ground_delay_min": 2,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-MQ3245",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 5964.0,
+  "agents_plan_cost": 9289.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "13:00",
+   "ground_delay_min": 32,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "A12",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA372",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 907.5,
+  "agents_plan_cost": 907.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "16:06",
+   "ground_delay_min": 2,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1310",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 505.0,
+  "agents_plan_cost": 505.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "17:00",
+   "ground_delay_min": 0,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-NK208",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 505.0,
+  "agents_plan_cost": 505.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "04:28",
+   "ground_delay_min": 0,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA1502",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 1201.5,
+  "agents_plan_cost": 1201.5,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "15:57",
+   "ground_delay_min": 2,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-EV2504",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 8235.5,
+  "agents_plan_cost": 9308.25,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "14:00",
+   "ground_delay_min": 45,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "A12",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA386",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 814.75,
+  "agents_plan_cost": 814.75,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "21:46",
+   "ground_delay_min": 3,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA379",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 505.0,
+  "agents_plan_cost": 505.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "16:44",
+   "ground_delay_min": 0,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ },
+ {
+  "flight": "DFW-20150424-AA2260",
+  "event": "late_aircraft",
+  "outcome": "consensus",
+  "fallback_outcome": "halt_least_cost",
+  "fallback_cost": 505.0,
+  "agents_plan_cost": 505.0,
+  "chosen_plan_valid": true,
+  "plan": {
+   "arrival_slot": "23:17",
+   "ground_delay_min": 0,
+   "holding_min": 0,
+   "extra_fuel_min": 0,
+   "gate": "B20",
+   "divert": false
+  }
+ }
+]
