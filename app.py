@@ -262,7 +262,7 @@ def plain_explanation(res):
 load_dotenv(ROOT / ".env.local")
 load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="ATC · Pilot · Ground", layout="wide")
-st.markdown('<style>\n.block-container{max-width:1200px;padding-top:2rem}\n.hero{background:linear-gradient(120deg,#0b2545,#13315c 55%,#1d4e89);color:#fff;padding:22px 28px;border-radius:16px;margin-bottom:16px;box-shadow:0 6px 20px #0b254533}\n.hero h1{color:#fff;margin:0;font-size:2rem}\n.hero p{color:#cfe0f5;margin:6px 0 0}\n[data-testid="stMetric"]{background:#fff;border:1px solid #e3e9f1;border-radius:12px;padding:12px 16px;box-shadow:0 1px 4px #0001}\n.team{background:#fff;border:1px solid #e3e9f1;border-left:5px solid var(--c);border-radius:12px;padding:12px 14px;min-height:120px;box-shadow:0 1px 4px #0001;overflow-wrap:anywhere}\n[data-testid="stMetric"]{min-height:150px;height:100%}[data-testid="stMetricValue"],[data-testid="stMetricValue"] *{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:1.6rem;line-height:1.2}.team{min-height:250px;height:100%}.team b{font-size:1rem}.team .why{color:#556;font-size:.85rem;margin-top:6px}\n</style>' + '<div class="hero"><h1>✈️ Flight Disruption Assistant</h1><p>Air traffic control, the pilot and the ground crew agree on a recovery plan. You make the final call.</p></div>', unsafe_allow_html=True)
+st.markdown('<style>\n.block-container{max-width:1200px;padding-top:2rem}\n.hero{background:linear-gradient(120deg,#0b2545,#13315c 55%,#1d4e89);color:#fff;padding:22px 28px;border-radius:16px;margin-bottom:16px;box-shadow:0 6px 20px #0b254533}\n.hero h1{color:#fff;margin:0;font-size:2rem}\n.hero p{color:#cfe0f5;margin:6px 0 0}\n[data-testid="stMetric"]{background:#fff;border:1px solid #e3e9f1;border-radius:12px;padding:12px 16px;box-shadow:0 1px 4px #0001}\n.team{background:#fff;border:1px solid #e3e9f1;border-left:5px solid var(--c);border-radius:12px;padding:12px 14px;min-height:120px;box-shadow:0 1px 4px #0001;overflow-wrap:anywhere}\n[data-testid="stMetric"]{min-height:150px;height:100%}[data-testid="stMetricValue"],[data-testid="stMetricValue"] *{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:1.6rem;line-height:1.2}.team{min-height:250px;margin-bottom:18px}.decision{border-radius:16px;padding:20px 24px;margin:14px 0;color:#fff;display:flex;align-items:center;gap:16px;box-shadow:0 8px 24px #0002;animation:pop .35s ease-out}.decision .ic{font-size:2.4rem}.decision .h{font-size:1.4rem;font-weight:700}.decision .s{opacity:.9;font-size:.9rem}.d-ok{background:linear-gradient(120deg,#1b8a3a,#43a047)}.d-no{background:linear-gradient(120deg,#b71c1c,#e53935)}@keyframes pop{0%{transform:scale(.95);opacity:0}100%{transform:scale(1);opacity:1}}.team b{font-size:1rem}.team .why{color:#556;font-size:.85rem;margin-top:6px}\n</style>' + '<div class="hero"><h1>✈️ Flight Disruption Assistant</h1><p>Air traffic control, the pilot and the ground crew agree on a recovery plan. You make the final call.</p></div>', unsafe_allow_html=True)
 
 SIDEBAR_CSS = """<style>
 [data-testid="stSidebar"]{background:linear-gradient(180deg,#0b2545 0%,#13315c 60%,#1d4e89 100%)}
@@ -360,10 +360,18 @@ if res and res.get("row_id") == row_id:
         if col.button(label, key=label, type="primary" if label == "Approve" else "secondary", width="stretch"):
             st.session_state["approval"] = {"row_id": row_id, "decision": past, "at": datetime.now().isoformat(timespec="seconds")}
             st.session_state["stage"] = 5
+            st.toast(f"Plan {past.lower()}", icon="✅" if past == "Approved" else "⛔")
+            if past == "Approved":
+                st.balloons()
             render_stages(stage_slot, 5)
     if "approval" in st.session_state:
         d = st.session_state["approval"]
-        st.info(f"{d['decision']} at {d['at']}")
+        ok = d["decision"] == "Approved"
+        when = datetime.fromisoformat(d["at"]).strftime("%H:%M:%S on %d %b %Y")
+        st.markdown(f'<div class="decision {"d-ok" if ok else "d-no"}"><div class="ic">{"✅" if ok else "⛔"}</div><div>'
+                    f'<div class="h">Plan {d["decision"].lower()} by the duty manager</div>'
+                    f'<div class="s">{"Recovery plan released to ATC, pilot and ground crew" if ok else "Plan sent back. No action taken"}'
+                    f' · logged at {when}</div></div></div>', unsafe_allow_html=True)
 
     # 7. Supporting detail, collapsed by default
     with st.expander("Why this plan? (plain-English explanation)", expanded=True):
