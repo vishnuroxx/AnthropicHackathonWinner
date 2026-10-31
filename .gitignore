@@ -26,3 +26,9 @@ test-results/
 # OS / editor
 .DS_Store
 *.log
+
+# Downloaded datasets: ignored except the organiser-provided Challenge #2 CSVs
+data/*
+!data/raw/
+data/raw/*
+!data/raw/dot2015/
