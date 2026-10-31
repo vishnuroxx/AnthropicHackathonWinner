@@ -13,7 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 AgentName = Literal["atc", "pilot", "ground"]
 Action = Literal["propose", "accept", "counter", "reject"]
-Flag = Literal["MINIMUM_FUEL", "DUTY_LIMIT", "DIVERT_RECOMMENDED", "CANCEL_RECOMMENDED"]
+Flag = Literal["MINIMUM_FUEL", "DUTY_LIMIT", "DIVERT_RECOMMENDED", "CANCEL_RECOMMENDED",
+               "CREW_OVERTIME", "CONNECTION_RISK"]  # last two: Ground agent (soft cost, code-derived)
 
 
 class Plan(BaseModel):
