@@ -14,7 +14,7 @@ from ground_agent.tests.helpers import make_state
 
 # Builds a GroundDecision with sensible defaults.
 def decision(**over) -> GroundDecision:
-    kw = dict(action="propose", plan_id=None, gate="A1", need="n", offer="o",
+    kw = dict(action="propose", plan_id=None, gate="A1", interests_cited=["I1"], need="n", offer="o",
               reason="C-GATE-1 gate free", requested_next_action="ATC: confirm slot")
     kw.update(over)
     return GroundDecision(**kw)
@@ -149,6 +149,43 @@ def test_system_prompt_has_ground_facts_only_and_cache_breakpoint():
     assert system[-1]["cache_control"] == {"type": "ephemeral"}
     assert "FACTS" in system[-1]["text"]
     assert client.calls[0]["max_tokens"] > 0
+
+
+def test_unknown_interest_id_is_reasked():
+    client = FakeClient([resp(decision(interests_cited=["I9"])), resp(decision())])
+    m = run(GroundAgent(client).propose(make_state()))
+    assert m.action == "propose" and len(client.calls) == 2
+    assert "unknown interest ids" in client.calls[1]["messages"][-1]["content"]
+
+
+def test_missing_interest_citation_is_reasked_then_rejected():
+    client = FakeClient([resp(decision(interests_cited=[])), resp(decision(interests_cited=[]))])
+    m = run(GroundAgent(client).propose(make_state()))
+    assert m.action == "reject" and len(client.calls) == 2
+
+
+def test_icap_brief_carries_cited_interests_and_code_alternatives():
+    m = run(GroundAgent(FakeClient([resp(decision(interests_cited=["I1", "I4"]))])).propose(make_state()))
+    assert m.icap.interest.endswith("[cites I1, I4]")
+    assert [a.plan_ref for a in m.icap.alternatives] == ["G1", "G2", "G3"]  # cheapest valid first
+    assert all(a.status == "candidate" for a in m.icap.alternatives)
+
+
+def test_respond_payload_has_batna_gap_and_ready_time():
+    s = make_state()
+    table = baseline_plan(s).model_copy(update={"gate": "C3"})  # the costly option
+    client = FakeClient([resp(decision(action="counter", gate="A1"))])
+    run(GroundAgent(client).respond(s, 2, "P1", table, check_ground(table, s), []))
+    user = client.calls[0]["messages"][0]["content"]
+    assert '"vs_batna_usd": 6400.0' in user and '"ready_time": "20:45"' in user
+
+
+def test_facts_include_icap_and_stay_deterministic():
+    s = make_state()
+    a, b = build_ground_facts(s), build_ground_facts(s)
+    assert a["icap"]["priorities"]["ranked"][0]["id"] == "I5"
+    import json
+    assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)  # keeps the prompt cache valid
 
 
 def test_hindsight_guard():
