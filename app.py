@@ -29,35 +29,41 @@ SHOWN_COLS = ["AIRLINE", "FLIGHT_NUMBER", "TAIL_NUMBER", "ORIGIN_AIRPORT", "DEST
 # Workflow from CLAUDE.md §5: (title, who, what happens)
 STAGES = [
     ("1. Disruption", "real 2015 flight", "A delayed flight comes in"),
-    ("2. Each team weighs in", "ATC · Pilot · Ground", "Each team suggests what works best for them"),
-    ("3. Agree on a plan", "safety-checked", "Unsafe plans are thrown out; the teams settle on one in 3 rounds or less"),
+    ("2. Each team weighs in", "ATC · Pilot · Ground", "Each team suggests its best plan"),
+    ("3. Agree on a plan", "safety-checked", "Unsafe plans removed; settle in 3 rounds or less"),
     ("4. Recommendation", "explained", "A plain-English summary of what and why"),
     ("5. Your call", "duty manager", "You approve or reject"),
 ]
 PULSE_CSS = """<style>
-@keyframes pulse {0%,100%{box-shadow:0 0 0 0 rgba(255,170,0,.6)} 50%{box-shadow:0 0 0 8px rgba(255,170,0,0)}}
-.stApp{background-color:#f4f7fb;background-image:radial-gradient(circle at 12% 8%,#dbe8fa 0,transparent 35%),radial-gradient(circle at 90% 30%,#e8e2fb 0,transparent 30%),radial-gradient(#c9d6e822 1px,transparent 1px);background-size:auto,auto,22px 22px;background-attachment:fixed}.lim{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}.lim div{background:#f8fafd;border:1px solid #e3e9f1;border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}.lim .k{font-size:.78rem;color:#667;text-transform:uppercase;letter-spacing:.03em}.lim .v{font-size:1.05rem;font-weight:600;color:#1b2a41;margin-top:2px}.tag{display:inline-block;font-size:.7rem;font-weight:500;padding:1px 7px;border-radius:9px;margin-left:6px;vertical-align:middle}.t-sim{background:#fff3e0;color:#b25e00}.t-real{background:#e3f2fd;color:#0d47a1}
-[data-testid="stExpander"]{background:#fff;border-radius:12px}
-.st-box{flex:1 1 0;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid #d6dee8;background:#fff;
-  font-size:.85rem;line-height:1.3;overflow-wrap:anywhere;box-shadow:0 1px 3px #0001}
-.st-box b{display:block;margin-bottom:2px}
-.st-done{background:#e8f5e9;border-color:#66bb6a}
-.st-active{background:#fff8e1;border-color:#ffa000;animation:pulse 1.2s infinite}
-.st-todo{opacity:.55}
+@keyframes ring {0%,100%{box-shadow:0 0 0 0 rgba(29,78,137,.45)} 50%{box-shadow:0 0 0 9px rgba(29,78,137,0)}}
+.stepper{display:flex;background:#fff;border:1px solid #e3e9f1;border-radius:16px;padding:18px 12px 14px;
+  box-shadow:0 2px 8px #0b25450f;margin-bottom:16px}
+.step{flex:1 1 0;min-width:0;text-align:center;position:relative;padding:0 6px}
+.step:not(:last-child)::after{content:"";position:absolute;top:17px;left:calc(50% + 22px);right:calc(-50% + 22px);
+  height:3px;border-radius:2px;background:#e3e9f1}
+.step.done:not(:last-child)::after{background:#43a047}
+.dot{width:36px;height:36px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.95rem;border:2px solid #cfd8e3;color:#8a96a8;background:#fff}
+.step.done .dot{background:#43a047;border-color:#43a047;color:#fff}
+.step.active .dot{background:#1d4e89;border-color:#1d4e89;color:#fff;animation:ring 1.4s infinite}
+.step .t{font-weight:600;font-size:.88rem;color:#1b2a41;overflow-wrap:anywhere}
+.step .d{font-size:.75rem;color:#7a8699;margin-top:2px;overflow-wrap:anywhere}
+.step.todo .t{color:#9aa5b5}
+@media (max-width:700px){.stepper{flex-direction:column;gap:12px}.step{text-align:left;display:flex;gap:10px}
+  .step::after{display:none}.dot{margin:0}}
 </style>"""
 
 
-# Renders the 5-stage workflow bar into a placeholder.
+# Renders the 5-stage workflow as a stepper into a placeholder.
 # Args: slot - st.empty() placeholder; active - 0-based index of the current stage (5 = all done).
 def render_stages(slot, active):
-    boxes = []
-    for i, (title, who, what) in enumerate(STAGES):
-        cls = "st-done" if i < active else "st-active" if i == active else "st-todo"
-        mark = "✓ " if i < active else ""
-        boxes.append(f'<div class="st-box {cls}"><b>{mark}{title}</b><br><i>{who}</i><br>'
-                     f'<span style="font-size:.75rem">{what}</span></div>')
-    slot.markdown(PULSE_CSS + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' + "".join(boxes) + "</div>",
-                  unsafe_allow_html=True)
+    steps = []
+    for i, (title, _who, what) in enumerate(STAGES):
+        cls = "done" if i < active else "active" if i == active else "todo"
+        mark = "✓" if i < active else str(i + 1)
+        steps.append(f'<div class="step {cls}"><div class="dot">{mark}</div><div><div class="t">{title.split(". ", 1)[-1]}</div>'
+                     f'<div class="d">{what}</div></div></div>')
+    slot.markdown(PULSE_CSS + '<div class="stepper">' + "".join(steps) + "</div>", unsafe_allow_html=True)
 
 
 # Formats an HHMM string or minutes-from-midnight int as HH:MM.
