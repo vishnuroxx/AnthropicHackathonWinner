@@ -1,0 +1,80 @@
+{
+  "outcome": "recommend_cancel",
+  "rounds": 1,
+  "final_plan": null,
+  "log": [
+    {
+      "round": 1,
+      "agent": "atc",
+      "table_plan_id": null,
+      "message": {
+        "action": "propose",
+        "plan_id": null,
+        "plan": {
+          "arrival_slot": "18:26",
+          "ground_delay_min": 52,
+          "holding_min": 0,
+          "extra_fuel_min": 0,
+          "gate": "A12",
+          "divert": false
+        },
+        "need": "",
+        "offer": "",
+        "reason": "10 plans sent; favourite: Slot 18:26: system delay 53 min, holding 0 min, cost $2646.",
+        "flags": []
+      },
+      "checker": {
+        "valid": false,
+        "violations": [
+          "C-GATE-1: gate A12 not free within 30 min of arrival (wait 131)"
+        ],
+        "cost": 12766.5
+      }
+    },
+    {
+      "round": 1,
+      "agent": "pilot",
+      "table_plan_id": null,
+      "message": {
+        "action": "propose",
+        "plan_id": null,
+        "plan": {
+          "arrival_slot": "17:57",
+          "ground_delay_min": 23,
+          "holding_min": 0,
+          "extra_fuel_min": 0,
+          "gate": "A12",
+          "divert": false
+        },
+        "need": "",
+        "offer": "",
+        "reason": "10 plans sent; favourite: Fuel margin 18.3 min, holding 0 min, 355 pax miss connections, arrival delay 23 min.",
+        "flags": []
+      },
+      "checker": {
+        "valid": false,
+        "violations": [
+          "C-GATE-1: gate A12 not free within 30 min of arrival (wait 160)"
+        ],
+        "cost": 16188.5
+      }
+    }
+  ],
+  "document": "# Decision record: DFW-20150424-AA1480\n\n**Outcome: NO VALID PLAN.** No proposed plan passed every hard constraint.\n\n## Disruption\n\n- run_id: 20261031-160855\n- mode: live (round-3 votes by Claude agents)\n- flight: AA1480 MCI->DFW\n- date: 2015-04-24\n- scheduled_arrival: 1734\n- event: {'type': 'weather', 'magnitude_min': 165}\n- seed: 7\n- data: DOT 2015 flights.csv row + organiser workbook limits\n- synthetic_inputs: gate occupancy, filler arrivals, connecting pax, crew report (labelled in each lane)\n\n## Rules the mediator applied (code, not AI)\n\n- plans_per_agent: 10\n- shortlist_per_agent: 3\n- score_floor: 0.05\n- pick_rule: max of atc x pilot x ground x cost_score; cost_score = cheapest cost / plan cost; ties: lower cost, then lower id\n- consensus_rule: all three agents accept the picked plan in round 3 and it passes the final check\n\n## Round 1: each agent proposes up to 10 plans\n\n- **ATC** sent 10 plans. Its favourite: arrive 18:26 (52 min ground delay), gate A12. Why: Slot 18:26: system delay 53 min, holding 0 min, cost $2646.\n- **PILOT** sent 10 plans. Its favourite: arrive 17:57 (23 min ground delay), gate A12. Why: Fuel margin 18.3 min, holding 0 min, 355 pax miss connections, arrival delay 23 min.\n- **GROUND** sent 0 plans.\n\nThe mediator received 20 plans, merged duplicates into 14, and the constraint checker (code) kept **0**.\n\nPlans removed by the checker:\n\n- C1 (atc): arrive 18:26 (52 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 131)\n- C2 (atc): arrive 18:25 (51 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 132)\n- C3 (atc): arrive 18:24 (50 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 133)\n- C4 (atc, pilot): arrive 18:22 (48 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 135)\n- C5 (atc, pilot): arrive 18:21 (47 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 136)\n- C6 (atc, pilot): arrive 18:16 (42 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 141)\n- C7 (atc, pilot): arrive 18:08 (34 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 149)\n- C8 (atc, pilot): arrive 18:05 (31 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 152)\n- C9 (atc, pilot): arrive 17:57 (23 min ground delay), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 160)\n- C10 (atc): arrive 17:57 (no ground delay, 23 min holding), gate A12. Broke: C-FUEL-1: fuel margin -4.7 min < 0; C-GATE-1: gate A12 not free within 30 min of arrival (wait 160)\n- C11 (pilot): arrive 17:57 (no ground delay, 23 min holding, 15 min extra fuel), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 160)\n- C12 (pilot): arrive 18:05 (no ground delay, 31 min holding, 23 min extra fuel), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 152)\n- C13 (pilot): arrive 18:08 (no ground delay, 34 min holding, 26 min extra fuel), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 149)\n- C14 (pilot): arrive 18:16 (no ground delay, 42 min holding, 34 min extra fuel), gate A12. Broke: C-GATE-1: gate A12 not free within 30 min of arrival (wait 141)\n\n## Fallback (deterministic, no AI)\n\nTriggered because: **no_valid_r1**. The solver enumerated 136 plans, 0 passed every hard rule; rejections by rule: {'C-FUEL-1': 68, 'C-GATE-1': 34, 'C-GATE-2': 102}.\n\n**No valid plan: recommend cancellation to the human** (no valid plan: recommendation to the human, never auto-applied).\nNote: the fallback searches the same slot menu and gates with the same checker and cost as the negotiation, so its plan passes the same safety check.\n\n## Human decision\n\nThe duty manager approves or rejects this recommendation. Every line above is in the machine log:\n\n`/Users/cibichandar/AnthropicHackathonWinner/logs/mediator-DFW-20150424-AA1480-20261031-160855.jsonl`\n",
+  "world": {
+    "run_id": "20261031-160855",
+    "mode": "live (round-3 votes by Claude agents)",
+    "flight": "AA1480 MCI->DFW",
+    "date": "2015-04-24",
+    "scheduled_arrival": "1734",
+    "event": {
+      "type": "weather",
+      "magnitude_min": 165
+    },
+    "seed": 7,
+    "data": "DOT 2015 flights.csv row + organiser workbook limits",
+    "synthetic_inputs": "gate occupancy, filler arrivals, connecting pax, crew report (labelled in each lane)"
+  },
+  "log_path": "/Users/cibichandar/AnthropicHackathonWinner/logs/mediator-DFW-20150424-AA1480-20261031-160855.jsonl",
+  "row_id": "AA1480_MCI_DFW_weather"
+}

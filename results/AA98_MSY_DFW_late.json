@@ -1,0 +1,80 @@
+{
+  "outcome": "recommend_cancel",
+  "rounds": 1,
+  "final_plan": null,
+  "log": [
+    {
+      "round": 1,
+      "agent": "atc",
+      "table_plan_id": null,
+      "message": {
+        "action": "propose",
+        "plan_id": null,
+        "plan": {
+          "arrival_slot": "22:14",
+          "ground_delay_min": 81,
+          "holding_min": 0,
+          "extra_fuel_min": 0,
+          "gate": "A12",
+          "divert": false
+        },
+        "need": "",
+        "offer": "",
+        "reason": "10 plans sent; favourite: Slot 22:14: system delay 172 min, holding 0 min, cost $4067.",
+        "flags": []
+      },
+      "checker": {
+        "valid": false,
+        "violations": [
+          "C-CREW-2: flight crew duty margin -104.0 min < 0"
+        ],
+        "cost": 8566.25
+      }
+    },
+    {
+      "round": 1,
+      "agent": "ground",
+      "table_plan_id": null,
+      "message": {
+        "action": "propose",
+        "plan_id": null,
+        "plan": {
+          "arrival_slot": "21:48",
+          "ground_delay_min": 55,
+          "holding_min": 0,
+          "extra_fuel_min": 0,
+          "gate": "A12",
+          "divert": false
+        },
+        "need": "",
+        "offer": "",
+        "reason": "10 plans sent; favourite: Gate A12: wait 0 min, overtime 75 min, ground cost $3089.",
+        "flags": []
+      },
+      "checker": {
+        "valid": false,
+        "violations": [
+          "C-CREW-2: flight crew duty margin -78.0 min < 0"
+        ],
+        "cost": 8527.75
+      }
+    }
+  ],
+  "document": "# Decision record: DFW-20150424-AA98\n\n**Outcome: NO VALID PLAN.** No proposed plan passed every hard constraint.\n\n## Disruption\n\n- run_id: 20261031-160908\n- mode: live (round-3 votes by Claude agents)\n- flight: AA98 MSY->DFW\n- date: 2015-04-24\n- scheduled_arrival: 1923\n- event: {'type': 'late_aircraft', 'magnitude_min': 90}\n- seed: 7\n- data: DOT 2015 flights.csv row + organiser workbook limits\n- synthetic_inputs: gate occupancy, filler arrivals, connecting pax, crew report (labelled in each lane)\n\n## Rules the mediator applied (code, not AI)\n\n- plans_per_agent: 10\n- shortlist_per_agent: 3\n- score_floor: 0.05\n- pick_rule: max of atc x pilot x ground x cost_score; cost_score = cheapest cost / plan cost; ties: lower cost, then lower id\n- consensus_rule: all three agents accept the picked plan in round 3 and it passes the final check\n\n## Round 1: each agent proposes up to 10 plans\n\n- **ATC** sent 10 plans. Its favourite: arrive 22:14 (81 min ground delay), gate A12. Why: Slot 22:14: system delay 172 min, holding 0 min, cost $4067.\n- **PILOT** sent 0 plans.\n- **GROUND** sent 10 plans. Its favourite: arrive 21:48 (55 min ground delay), gate A12. Why: Gate A12: wait 0 min, overtime 75 min, ground cost $3089.\n\nThe mediator received 20 plans, merged duplicates into 19, and the constraint checker (code) kept **0**.\n\nPlans removed by the checker:\n\n- C1 (atc): arrive 22:14 (81 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -104.0 min < 0\n- C2 (atc): arrive 22:10 (77 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -100.0 min < 0\n- C3 (atc): arrive 22:06 (73 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -96.0 min < 0\n- C4 (atc): arrive 22:06 (no ground delay, 73 min holding, 28 min extra fuel), gate A12. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -96.0 min < 0\n- C5 (atc): arrive 22:10 (no ground delay, 77 min holding, 32 min extra fuel), gate A12. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -100.0 min < 0\n- C6 (atc): arrive 22:14 (no ground delay, 81 min holding, 36 min extra fuel), gate A12. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -104.0 min < 0\n- C7 (atc): arrive 22:16 (83 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -106.0 min < 0\n- C8 (atc): arrive 22:12 (79 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -102.0 min < 0\n- C9 (atc): arrive 22:09 (76 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -99.0 min < 0\n- C10 (atc, ground): arrive 22:00 (67 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -90.0 min < 0\n- C11 (ground): arrive 21:48 (55 min ground delay), gate A12. Broke: C-CREW-2: flight crew duty margin -78.0 min < 0\n- C12 (ground): arrive 21:48 (no ground delay, 55 min holding, 10 min extra fuel), gate A12. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -78.0 min < 0\n- C13 (ground): arrive 21:48 (55 min ground delay), gate B20. Broke: C-CREW-2: flight crew duty margin -78.0 min < 0\n- C14 (ground): arrive 21:48 (55 min ground delay), gate C12. Broke: C-CREW-2: flight crew duty margin -78.0 min < 0\n- C15 (ground): arrive 21:48 (55 min ground delay), gate C21. Broke: C-CREW-2: flight crew duty margin -78.0 min < 0\n- C16 (ground): arrive 21:48 (no ground delay, 55 min holding, 10 min extra fuel), gate B20. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -78.0 min < 0\n- C17 (ground): arrive 21:48 (no ground delay, 55 min holding, 10 min extra fuel), gate C12. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -78.0 min < 0\n- C18 (ground): arrive 21:48 (no ground delay, 55 min holding, 10 min extra fuel), gate C21. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -78.0 min < 0\n- C19 (ground): arrive 22:00 (no ground delay, 67 min holding, 22 min extra fuel), gate A12. Broke: C-FUEL-1: fuel margin -26.7 min < 0; C-CREW-2: flight crew duty margin -90.0 min < 0\n\n## Fallback (deterministic, no AI)\n\nTriggered because: **no_valid_r1**. The solver enumerated 80 plans, 0 passed every hard rule; rejections by rule: {'C-CREW-2': 80, 'C-FUEL-1': 40}.\n\n**No valid plan: recommend cancellation to the human** (no valid plan: recommendation to the human, never auto-applied).\nNote: the fallback searches the same slot menu and gates with the same checker and cost as the negotiation, so its plan passes the same safety check.\n\n## Human decision\n\nThe duty manager approves or rejects this recommendation. Every line above is in the machine log:\n\n`/Users/cibichandar/AnthropicHackathonWinner/logs/mediator-DFW-20150424-AA98-20261031-160908.jsonl`\n",
+  "world": {
+    "run_id": "20261031-160908",
+    "mode": "live (round-3 votes by Claude agents)",
+    "flight": "AA98 MSY->DFW",
+    "date": "2015-04-24",
+    "scheduled_arrival": "1923",
+    "event": {
+      "type": "late_aircraft",
+      "magnitude_min": 90
+    },
+    "seed": 7,
+    "data": "DOT 2015 flights.csv row + organiser workbook limits",
+    "synthetic_inputs": "gate occupancy, filler arrivals, connecting pax, crew report (labelled in each lane)"
+  },
+  "log_path": "/Users/cibichandar/AnthropicHackathonWinner/logs/mediator-DFW-20150424-AA98-20261031-160908.jsonl",
+  "row_id": "AA98_MSY_DFW_late"
+}

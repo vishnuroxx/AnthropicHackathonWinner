@@ -122,24 +122,46 @@ def plan_str(p):
     return ", ".join(f"{k}={v}" for k, v in p.items() if v not in (None, "", 0, False)) or "no change"
 
 
-# Renders the grouped-by-round negotiation log.
+# Renders a plan dict as a short human line, e.g. "arrive 21:09 · 105 min ground delay · gate B20".
+def plan_line(p):
+    if not p:
+        return "—"
+    if p.get("divert"):
+        return "divert to alternate"
+    bits = [f"arrive {p.get('arrival_slot', '?')}"]
+    if p.get("ground_delay_min"):
+        bits.append(f"{p['ground_delay_min']} min ground delay")
+    if p.get("holding_min"):
+        bits.append(f"{p['holding_min']} min holding")
+    if p.get("extra_fuel_min"):
+        bits.append(f"{p['extra_fuel_min']} min extra fuel")
+    if p.get("gate"):
+        bits.append(f"gate {p['gate']}")
+    return " · ".join(bits)
+
+
+ROUND_TITLES = {1: "Round 1 — each agent proposes its favourite plan", 2: "Round 2 — each agent scores the picked plan",
+                3: "Round 3 — final vote on the picked plan"}
+
+
+# Renders the negotiation log as one compact table per round (agent, action, plan, safety check, reason).
 def render_log(log):
     for rnd in sorted({e["round"] for e in log}):
-        st.markdown(f"#### Round {rnd}")
+        st.markdown(f"**{ROUND_TITLES.get(rnd, f'Round {rnd}')}**")
+        rows = []
         for e in (e for e in log if e["round"] == rnd):
             m, c = e.get("message") or {}, e.get("checker") or {}
-            with st.container(border=True):
-                st.markdown(f"**{e['agent'].upper()}** · `{m.get('action', '?')}`"
-                            + (f" · plan `{m['plan_id']}`" if m.get("plan_id") else "")
-                            + "".join(f" · ⚠️ {fl}" for fl in m.get("flags") or []))
-                st.write(f"**Plan:** {plan_str(m.get('plan'))}")
-                st.write(f"**Need:** {m.get('need', '—')}  \n**Offer:** {m.get('offer', '—')}  \n**Reason:** {m.get('reason', '—')}")
-                if c:
-                    cost = f" · cost ${c['cost']:,.0f}" if isinstance(c.get("cost"), (int, float)) else ""
-                    if c.get("valid"):
-                        st.success(f"✅ valid{cost}")
-                    else:
-                        st.error("❌ " + "; ".join(map(str, c.get("violations") or ["invalid"])) + cost)
+            if not c:
+                check = "—"
+            elif c.get("valid"):
+                check = "✅ safe" + (f" · ${c['cost']:,.0f}" if isinstance(c.get("cost"), (int, float)) else "")
+            else:
+                check = "❌ " + "; ".join(str(v).split(":")[0] for v in c.get("violations") or ["invalid"])
+            rows.append({"Agent": e["agent"].upper(), "Action": m.get("action", "?"),
+                         "Plan": (f"{m['plan_id']}: " if m.get("plan_id") else "") + plan_line(m.get("plan")),
+                         "Safety check": check, "Why": m.get("reason", "")})
+        st.dataframe(rows, hide_index=True, width="stretch",
+                     column_config={"Why": st.column_config.TextColumn(width="large")})
 
 
 # Builds the decision document from the log only (used when the result has no crafted document).
@@ -192,8 +214,9 @@ c2.metric("Flight", f"{row['AIRLINE']}{row['FLIGHT_NUMBER']} · {row['TAIL_NUMBE
 c3.metric("Route", f"{row['ORIGIN_AIRPORT']} → {row['DESTINATION_AIRPORT']}")
 st.write(f"Scheduled departure **{hhmm(row['SCHEDULED_DEPARTURE'])}**, arrival **{hhmm(row['SCHEDULED_ARRIVAL'])}**, "
          f"block {row['SCHEDULED_TIME']} min, {row['DISTANCE']} mi — {MONTH}/{DAY}/2015 (real DOT data)")
-for label, val in key_constraints(spec["airline"], spec["flight_number"], spec["origin"]):
-    st.write(f"- **{label}:** {val}")
+with st.expander("Key constraints and assumptions (synthetic inputs are labelled)"):
+    for label, val in key_constraints(spec["airline"], spec["flight_number"], spec["origin"]):
+        st.write(f"- **{label}:** {val}")
 
 # 4. Run
 if st.button("Run negotiation", type="primary"):
@@ -221,19 +244,16 @@ if st.button("Run negotiation", type="primary"):
 
 res = st.session_state.get("result")
 if res and res.get("row_id") == row_id:
-    st.subheader("Negotiation log")
-    render_log(res.get("log", []))
-
-    # 6. Outcome
+    # 6. Outcome first: what was decided, then the human decision, then the supporting detail.
+    st.subheader("Recommendation")
     if res.get("outcome") == "consensus":
-        st.success(f"Consensus in {res.get('rounds')} rounds")
+        st.success(f"Consensus in {res.get('rounds')} rounds: all three agents accepted the plan.")
+    elif res.get("final_plan"):
+        st.warning("No consensus → deterministic least-cost fallback (non-AI) chose the plan.")
     else:
-        st.warning("No consensus → least-cost fallback (non-AI)")
-    st.write(f"**Final plan:** {plan_str(res.get('final_plan'))}")
-
-    # 7. Decision document
-    st.subheader("Decision document")
-    st.markdown(res.get("document") or template_document(res))
+        st.error("No safe plan exists within the constraints → the system recommends cancellation to the duty manager.")
+    if res.get("final_plan"):
+        st.markdown(f"### {plan_line(res.get('final_plan'))}")
     a, b, _ = st.columns([1, 1, 4])
     for label, past, col in (("Approve", "Approved", a), ("Reject", "Rejected", b)):
         if col.button(label, key=label):
@@ -243,6 +263,12 @@ if res and res.get("row_id") == row_id:
     if "approval" in st.session_state:
         d = st.session_state["approval"]
         st.info(f"{d['decision']} at {d['at']}")
+
+    # 7. Supporting detail, collapsed by default
+    with st.expander("Decision document: how and why (read this to verify)"):
+        st.markdown(res.get("document") or template_document(res))
+    with st.expander("Full negotiation log (every message, safety check and vote)"):
+        render_log(res.get("log", []))
 
 # 8. Evaluation
 with st.expander("Evaluation"):
