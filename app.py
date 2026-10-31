@@ -35,10 +35,14 @@ STAGES = [
 ]
 PULSE_CSS = """<style>
 @keyframes pulse {0%,100%{box-shadow:0 0 0 0 rgba(255,170,0,.6)} 50%{box-shadow:0 0 0 8px rgba(255,170,0,0)}}
-.st-box{flex:1;padding:8px 10px;border-radius:8px;border:1px solid #8884;font-size:.85rem;min-height:84px}
-.st-done{background:#1b5e2022;border-color:#2e7d32}
-.st-active{background:#ffa00022;border-color:#ffa000;animation:pulse 1.2s infinite}
-.st-todo{opacity:.45}
+.stApp{background:linear-gradient(180deg,#eef4fb 0%,#f8fafc 40%,#ffffff 100%)}
+[data-testid="stExpander"]{background:#fff;border-radius:12px}
+.st-box{flex:1 1 0;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid #d6dee8;background:#fff;
+  font-size:.85rem;line-height:1.3;overflow-wrap:anywhere;box-shadow:0 1px 3px #0001}
+.st-box b{display:block;margin-bottom:2px}
+.st-done{background:#e8f5e9;border-color:#66bb6a}
+.st-active{background:#fff8e1;border-color:#ffa000;animation:pulse 1.2s infinite}
+.st-todo{opacity:.55}
 </style>"""
 
 
@@ -51,7 +55,7 @@ def render_stages(slot, active):
         mark = "✓ " if i < active else ""
         boxes.append(f'<div class="st-box {cls}"><b>{mark}{title}</b><br><i>{who}</i><br>'
                      f'<span style="font-size:.75rem">{what}</span></div>')
-    slot.markdown(PULSE_CSS + '<div style="display:flex;gap:8px">' + "".join(boxes) + "</div>",
+    slot.markdown(PULSE_CSS + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' + "".join(boxes) + "</div>",
                   unsafe_allow_html=True)
 
 
@@ -163,8 +167,7 @@ def render_log(log):
             rows.append({"Team": TEAM.get(e["agent"], e["agent"]), "Did": ACTIONS.get(m.get("action"), m.get("action", "?")),
                          "Plan": (f"{m['plan_id']}: " if m.get("plan_id") else "") + plan_line(m.get("plan")),
                          "Safe?": check, "Why": m.get("reason", "")})
-        st.dataframe(rows, hide_index=True, width="stretch",
-                     column_config={"Why": st.column_config.TextColumn(width="large")})
+        st.table(rows)
 
 
 # Builds the decision document from the log only (used when the result has no crafted document).
@@ -219,6 +222,14 @@ def plain_explanation(res):
         out.append("#### What each team wanted first")
         for e in first:
             out.append(f"- {TEAM.get(e['agent'], e['agent'])}: {plan_line((e.get('message') or {}).get('plan'))}")
+    scored = [e for e in log if e["round"] == 2]
+    if scored:
+        out.append("#### How each team rated this plan (1 = their ideal)")
+        for e in scored:
+            r = (e.get("message") or {}).get("reason", "")
+            score, _, why = r.partition(":") if r.startswith("scored") else ("", "", r)
+            out.append(f"- {TEAM.get(e['agent'], e['agent'])} ({score.replace('scored', '').split(' for')[0].strip() or '?'}): {why.strip()}")
+    removed = {v for e in log for v in ((e.get("checker") or {}).get("violations") or [])}
     out.append("#### How they settled")
     out.append("Any plan that broke a safety rule (fuel, gate, runway slots, crew hours) was thrown out "
                "automatically, so no team ever saw an unsafe option. Each team then rated the safe options, "
@@ -227,6 +238,12 @@ def plain_explanation(res):
         out.append(f"All three teams said **yes** in round {res.get('rounds')}, and a final safety check passed.")
     else:
         out.append("The teams did not all agree, so the system picked the cheapest safe plan by rule (no AI).")
+    last = [e for e in log if e["round"] == max((x["round"] for x in log), default=0)]
+    if last:
+        out.append("#### Final vote, in each team's words")
+        for e in last:
+            m = e.get("message") or {}
+            out.append(f"- {TEAM.get(e['agent'], e['agent'])} ({ACTIONS.get(m.get('action'), m.get('action', ''))}): {m.get('reason', '')}")
     out.append("#### Good to know")
     out.append("Flight times and delays are real 2015 records. Gate bookings, crew shifts and connecting "
                "passengers are simulated for the demo. All numbers are calculated by code, not by the AI.")
