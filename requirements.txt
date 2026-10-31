@@ -3,3 +3,4 @@ openpyxl>=3.1
 pydantic==2.14.2
 pytest==9.2.0
 python-dotenv==1.2.4
+streamlit>=1.40
