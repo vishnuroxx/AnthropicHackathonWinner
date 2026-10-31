@@ -1,0 +1,672 @@
+{
+ "generated": "2026-11-01 00:26",
+ "sample_seed": 2015,
+ "world_seed": 7,
+ "sample": {
+  "n_run": 32,
+  "n": 31,
+  "errors": [],
+  "no_plan": [
+   {
+    "id": "DFW-20150303-MQ3275",
+    "why": "No proposed plan passed every hard constraint."
+   }
+  ],
+  "methods": {
+   "B0": {
+    "label": "Status quo: FCFS ground delay, keep gate",
+    "valid_rate": 0.806,
+    "invalid": 6,
+    "forced_divert": 0,
+    "mean_cost_usd": 2244,
+    "total_cost_usd": 69568,
+    "mean_full_cost_usd": 4031,
+    "total_full_cost_usd": 124968,
+    "mean_focal_delay_min": 44.0,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 44.7,
+    "total_holding_min": 0,
+    "total_holding_fuel_kg": 0,
+    "total_co2_kg": 0,
+    "total_pax_missed": 277,
+    "gate_changes": 0,
+    "total_gate_wait_min": 653,
+    "total_crew_overtime_min": 842
+   },
+   "B0h": {
+    "label": "Status quo: depart on time, hold in air",
+    "valid_rate": 0.806,
+    "invalid": 6,
+    "forced_divert": 0,
+    "mean_cost_usd": 2258,
+    "total_cost_usd": 70008,
+    "mean_full_cost_usd": 4045,
+    "total_full_cost_usd": 125408,
+    "mean_focal_delay_min": 44.0,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 44.7,
+    "total_holding_min": 9,
+    "total_holding_fuel_kg": 360,
+    "total_co2_kg": 1137,
+    "total_pax_missed": 277,
+    "gate_changes": 0,
+    "total_gate_wait_min": 653,
+    "total_crew_overtime_min": 842
+   },
+   "atc_alone": {
+    "label": "ATC decides alone",
+    "valid_rate": 0.935,
+    "invalid": 2,
+    "forced_divert": 0,
+    "mean_cost_usd": 1307,
+    "total_cost_usd": 40516,
+    "mean_full_cost_usd": 3094,
+    "total_full_cost_usd": 95916,
+    "mean_focal_delay_min": 44.6,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 44.7,
+    "total_holding_min": 0,
+    "total_holding_fuel_kg": 0,
+    "total_co2_kg": 0,
+    "total_pax_missed": 277,
+    "gate_changes": 13,
+    "total_gate_wait_min": 324,
+    "total_crew_overtime_min": 546
+   },
+   "pilot_alone": {
+    "label": "Pilot decides alone",
+    "valid_rate": 0.935,
+    "invalid": 2,
+    "forced_divert": 0,
+    "mean_cost_usd": 1335,
+    "total_cost_usd": 41392,
+    "mean_full_cost_usd": 3122,
+    "total_full_cost_usd": 96792,
+    "mean_focal_delay_min": 44.0,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 44.7,
+    "total_holding_min": 0,
+    "total_holding_fuel_kg": 0,
+    "total_co2_kg": 0,
+    "total_pax_missed": 277,
+    "gate_changes": 13,
+    "total_gate_wait_min": 324,
+    "total_crew_overtime_min": 526
+   },
+   "ground_alone": {
+    "label": "Ground decides alone",
+    "valid_rate": 0.968,
+    "invalid": 1,
+    "forced_divert": 0,
+    "mean_cost_usd": 958,
+    "total_cost_usd": 29690,
+    "mean_full_cost_usd": 2874,
+    "total_full_cost_usd": 89090,
+    "mean_focal_delay_min": 50.9,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 51.6,
+    "total_holding_min": 20,
+    "total_holding_fuel_kg": 800,
+    "total_co2_kg": 2528,
+    "total_pax_missed": 297,
+    "gate_changes": 15,
+    "total_gate_wait_min": 8,
+    "total_crew_overtime_min": 450
+   },
+   "NEG": {
+    "label": "Negotiated (3 agents + mediator)",
+    "valid_rate": 1.0,
+    "invalid": 0,
+    "forced_divert": 0,
+    "mean_cost_usd": 903,
+    "total_cost_usd": 28002,
+    "mean_full_cost_usd": 2819,
+    "total_full_cost_usd": 87402,
+    "mean_focal_delay_min": 50.7,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 51.3,
+    "total_holding_min": 0,
+    "total_holding_fuel_kg": 0,
+    "total_co2_kg": 0,
+    "total_pax_missed": 297,
+    "gate_changes": 15,
+    "total_gate_wait_min": 8,
+    "total_crew_overtime_min": 455
+   },
+   "B1": {
+    "label": "Fallback least-cost solver",
+    "valid_rate": 1.0,
+    "invalid": 0,
+    "forced_divert": 0,
+    "mean_cost_usd": 881,
+    "total_cost_usd": 27296,
+    "mean_full_cost_usd": 2797,
+    "total_full_cost_usd": 86696,
+    "mean_focal_delay_min": 51.3,
+    "p90_focal_delay_min": 144.0,
+    "mean_system_delay_min": 51.4,
+    "total_holding_min": 0,
+    "total_holding_fuel_kg": 0,
+    "total_co2_kg": 0,
+    "total_pax_missed": 297,
+    "gate_changes": 15,
+    "total_gate_wait_min": 8,
+    "total_crew_overtime_min": 470
+   }
+  },
+  "paired": {
+   "NEG_vs_B0:cost_usd": {
+    "mean_diff": -1340.8,
+    "ci95": [
+     -1873.5,
+     -863.6
+    ],
+    "n": 31,
+    "a_better": 23,
+    "tie": 8,
+    "b_better": 0
+   },
+   "NEG_vs_B0:full_cost_usd": {
+    "mean_diff": -1211.8,
+    "ci95": [
+     -1798.9,
+     -603.6
+    ],
+    "n": 31,
+    "a_better": 22,
+    "tie": 8,
+    "b_better": 1
+   },
+   "NEG_vs_B0:system_delay_min": {
+    "mean_diff": 6.6,
+    "ci95": [
+     3.2,
+     10.4
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 21,
+    "b_better": 10
+   },
+   "NEG_vs_B0:pax_missed": {
+    "mean_diff": 0.6,
+    "ci95": [
+     0.0,
+     1.9
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 30,
+    "b_better": 1
+   },
+   "NEG_vs_B0h:cost_usd": {
+    "mean_diff": -1355.1,
+    "ci95": [
+     -1888.0,
+     -873.4
+    ],
+    "n": 31,
+    "a_better": 24,
+    "tie": 7,
+    "b_better": 0
+   },
+   "NEG_vs_B0h:full_cost_usd": {
+    "mean_diff": -1226.0,
+    "ci95": [
+     -1817.6,
+     -612.5
+    ],
+    "n": 31,
+    "a_better": 23,
+    "tie": 7,
+    "b_better": 1
+   },
+   "NEG_vs_B0h:system_delay_min": {
+    "mean_diff": 6.6,
+    "ci95": [
+     3.2,
+     10.4
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 21,
+    "b_better": 10
+   },
+   "NEG_vs_B0h:pax_missed": {
+    "mean_diff": 0.6,
+    "ci95": [
+     0.0,
+     1.9
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 30,
+    "b_better": 1
+   },
+   "NEG_vs_B1:cost_usd": {
+    "mean_diff": 22.8,
+    "ci95": [
+     0.0,
+     66.7
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 29,
+    "b_better": 2
+   },
+   "NEG_vs_B1:full_cost_usd": {
+    "mean_diff": 22.8,
+    "ci95": [
+     0.0,
+     66.7
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 29,
+    "b_better": 2
+   },
+   "NEG_vs_B1:system_delay_min": {
+    "mean_diff": -0.0,
+    "ci95": [
+     -0.1,
+     0.0
+    ],
+    "n": 31,
+    "a_better": 1,
+    "tie": 30,
+    "b_better": 0
+   },
+   "NEG_vs_B1:pax_missed": {
+    "mean_diff": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 31,
+    "b_better": 0
+   },
+   "B1_vs_B0:cost_usd": {
+    "mean_diff": -1363.6,
+    "ci95": [
+     -1897.6,
+     -881.4
+    ],
+    "n": 31,
+    "a_better": 24,
+    "tie": 7,
+    "b_better": 0
+   },
+   "B1_vs_B0:full_cost_usd": {
+    "mean_diff": -1234.5,
+    "ci95": [
+     -1826.5,
+     -620.4
+    ],
+    "n": 31,
+    "a_better": 23,
+    "tie": 7,
+    "b_better": 1
+   },
+   "B1_vs_B0:system_delay_min": {
+    "mean_diff": 6.6,
+    "ci95": [
+     3.3,
+     10.4
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 20,
+    "b_better": 11
+   },
+   "B1_vs_B0:pax_missed": {
+    "mean_diff": 0.6,
+    "ci95": [
+     0.0,
+     1.9
+    ],
+    "n": 31,
+    "a_better": 0,
+    "tie": 30,
+    "b_better": 1
+   }
+  },
+  "negotiation": {
+   "consensus": 21,
+   "consensus_rate": 0.656,
+   "consensus_ci95": [
+    0.483,
+    0.796
+   ],
+   "outcomes": {
+    "consensus": 21,
+    "no_consensus": 10,
+    "no_valid_plan": 1
+   },
+   "fallback_rate": 0.344,
+   "rounds_max": 3,
+   "leaked_violations": 0,
+   "status_quo_invalid": 7,
+   "neg_equals_b1": 29,
+   "mean_latency_s": 0.81,
+   "llm_calls_per_scenario": 0,
+   "no_consensus_reasons": {
+    "atc rejected: Own option O1 has lower total_system_delay_min (n) than the table": 10
+   }
+  },
+  "attribution_vs_B0": {
+   "gate": {
+    "total_saving_usd": 40303,
+    "scenarios_saving": 15,
+    "scenarios_costing": 0
+   },
+   "slot": {
+    "total_saving_usd": 1263,
+    "scenarios_saving": 9,
+    "scenarios_costing": 2
+   }
+  },
+  "ablation_checker_off": {
+   "scenarios_where_pick_would_be_unsafe": 1,
+   "unsafe_candidates_caught": 139,
+   "candidates": 604,
+   "agent_favourites_unsafe": {
+    "atc": 3,
+    "pilot": 3,
+    "ground": 1
+   }
+  },
+  "ablation_extra_fuel": {
+   "hold_options": 580,
+   "fuel_fail_as_shipped": 468,
+   "fuel_fail_if_sized_to_pilot": 0
+  },
+  "historical": {
+   "mean_actual_arrival_delay_min": 102.9,
+   "n": 32
+  },
+  "by_stratum": {
+   "large/late_aircraft": {
+    "n": 8,
+    "consensus": 8,
+    "zero_delay_all_methods": 0,
+    "mean_focal_delay_NEG": 78.5,
+    "mean_full_cost_B0": 8060,
+    "mean_full_cost_NEG": 6318,
+    "mean_full_cost_B1": 6318,
+    "mean_hist_delay": 92.6
+   },
+   "large/weather": {
+    "n": 7,
+    "consensus": 5,
+    "zero_delay_all_methods": 3,
+    "mean_focal_delay_NEG": 7.9,
+    "mean_full_cost_B0": 4516,
+    "mean_full_cost_NEG": 1026,
+    "mean_full_cost_B1": 932,
+    "mean_hist_delay": 43.4
+   },
+   "medium/late_aircraft": {
+    "n": 8,
+    "consensus": 0,
+    "zero_delay_all_methods": 0,
+    "mean_focal_delay_NEG": 111.0,
+    "mean_full_cost_B0": 3573,
+    "mean_full_cost_NEG": 3673,
+    "mean_full_cost_B1": 3673,
+    "mean_hist_delay": 112.1
+   },
+   "medium/weather": {
+    "n": 8,
+    "consensus": 8,
+    "zero_delay_all_methods": 7,
+    "mean_focal_delay_NEG": 0.2,
+    "mean_full_cost_B0": 37,
+    "mean_full_cost_NEG": 37,
+    "mean_full_cost_B1": 31,
+    "mean_hist_delay": 138.2
+   }
+  }
+ },
+ "demo": {
+  "id": "DFW-20150424-MQ3086",
+  "stratum": "demo",
+  "event": "weather",
+  "magnitude_min": 126,
+  "dest": "DFW",
+  "historical_arrival_delay_min": 164.0,
+  "mode": "dry",
+  "outcome": "consensus",
+  "neg_why": null,
+  "llm_calls": 0,
+  "latency_s": 1.73,
+  "b1_candidates": 144,
+  "b1_valid": 30,
+  "ablation_checker_off": {
+   "unsafe_candidates": 16,
+   "candidates": 24,
+   "unsafe_agent_favourites": [
+    "pilot"
+   ],
+   "pick_unsafe": false,
+   "pick_violations": []
+  },
+  "ablation_extra_fuel": {
+   "hold_options": 18,
+   "fuel_fail_as_shipped": 18,
+   "fuel_fail_if_sized_to_pilot": 0,
+   "pilot_holdable_min": 18.3
+  },
+  "attr": {
+   "b0_cost": 23527.5,
+   "gate_only_cost": 15394.0
+  },
+  "connecting_pax_pilot": 287,
+  "m": {
+   "NEG": {
+    "valid": true,
+    "violations": [],
+    "forced_divert": false,
+    "plan": {
+     "arrival_slot": "21:09",
+     "ground_delay_min": 105,
+     "holding_min": 0,
+     "extra_fuel_min": 0,
+     "gate": "B20",
+     "divert": false
+    },
+    "cost_usd": 11915.0,
+    "full_cost_usd": 50115.0,
+    "focal_delay_min": 105,
+    "knock_on_min": 65,
+    "system_delay_min": 170,
+    "ground_delay_min": 105,
+    "holding_min": 0,
+    "holding_fuel_kg": 0,
+    "co2_kg": 0,
+    "pax_missed": 191,
+    "fuel_margin_min": 18.3,
+    "gate": "B20",
+    "gate_changed": true,
+    "gate_wait_min": 0,
+    "crew_overtime_min": 0
+   },
+   "B1": {
+    "valid": true,
+    "violations": [],
+    "forced_divert": false,
+    "plan": {
+     "arrival_slot": "21:52",
+     "ground_delay_min": 148,
+     "holding_min": 0,
+     "extra_fuel_min": 0,
+     "gate": "A12",
+     "divert": false
+    },
+    "cost_usd": 10804.5,
+    "full_cost_usd": 68204.5,
+    "focal_delay_min": 148,
+    "knock_on_min": 23,
+    "system_delay_min": 171,
+    "ground_delay_min": 148,
+    "holding_min": 0,
+    "holding_fuel_kg": 0,
+    "co2_kg": 0,
+    "pax_missed": 287,
+    "fuel_margin_min": 18.3,
+    "gate": "A12",
+    "gate_changed": false,
+    "gate_wait_min": 0,
+    "crew_overtime_min": 42
+   },
+   "B0": {
+    "valid": false,
+    "violations": [
+     "C-GATE-1: gate A12 not free within 30 min of arrival (wait 108)"
+    ],
+    "forced_divert": false,
+    "plan": {
+     "arrival_slot": "20:00",
+     "ground_delay_min": 36,
+     "holding_min": 0,
+     "extra_fuel_min": 0,
+     "gate": "A12",
+     "divert": false
+    },
+    "cost_usd": 23527.5,
+    "full_cost_usd": 58527.5,
+    "focal_delay_min": 36,
+    "knock_on_min": 135,
+    "system_delay_min": 171,
+    "ground_delay_min": 36,
+    "holding_min": 0,
+    "holding_fuel_kg": 0,
+    "co2_kg": 0,
+    "pax_missed": 175,
+    "fuel_margin_min": 18.3,
+    "gate": "A12",
+    "gate_changed": false,
+    "gate_wait_min": 108,
+    "crew_overtime_min": 38
+   },
+   "B0h": {
+    "valid": false,
+    "violations": [
+     "C-FUEL-1: fuel margin -17.7 min < 0",
+     "C-GATE-1: gate A12 not free within 30 min of arrival (wait 108)"
+    ],
+    "forced_divert": true,
+    "plan": {
+     "arrival_slot": "20:00",
+     "ground_delay_min": 0,
+     "holding_min": 36,
+     "extra_fuel_min": 0,
+     "gate": "A12",
+     "divert": false
+    },
+    "cost_usd": 40023.4,
+    "full_cost_usd": 97423.4,
+    "focal_delay_min": null,
+    "knock_on_min": 135,
+    "system_delay_min": null,
+    "ground_delay_min": 0,
+    "holding_min": 36,
+    "holding_fuel_kg": 732,
+    "co2_kg": 2313,
+    "pax_missed": 287,
+    "fuel_margin_min": -17.7,
+    "gate": "A12",
+    "gate_changed": false,
+    "gate_wait_min": 108,
+    "crew_overtime_min": 38
+   },
+   "atc_alone": {
+    "valid": true,
+    "violations": [],
+    "forced_divert": false,
+    "plan": {
+     "arrival_slot": "21:45",
+     "ground_delay_min": 141,
+     "holding_min": 0,
+     "extra_fuel_min": 0,
+     "gate": "A12",
+     "divert": false
+    },
+    "cost_usd": 11039.5,
+    "full_cost_usd": 68439.5,
+    "focal_delay_min": 141,
+    "knock_on_min": 29,
+    "system_delay_min": 170,
+    "ground_delay_min": 141,
+    "holding_min": 0,
+    "holding_fuel_kg": 0,
+    "co2_kg": 0,
+    "pax_missed": 287,
+    "fuel_margin_min": 18.3,
+    "gate": "A12",
+    "gate_changed": false,
+    "gate_wait_min": 3,
+    "crew_overtime_min": 38
+   },
+   "pilot_alone": {
+    "valid": false,
+    "violations": [
+     "C-GATE-1: gate A12 not free within 30 min of arrival (wait 108)"
+    ],
+    "forced_divert": false,
+    "plan": {
+     "arrival_slot": "20:00",
+     "ground_delay_min": 36,
+     "holding_min": 0,
+     "extra_fuel_min": 0,
+     "gate": "A12",
+     "divert": false
+    },
+    "cost_usd": 23527.5,
+    "full_cost_usd": 58527.5,
+    "focal_delay_min": 36,
+    "knock_on_min": 135,
+    "system_delay_min": 171,
+    "ground_delay_min": 36,
+    "holding_min": 0,
+    "holding_fuel_kg": 0,
+    "co2_kg": 0,
+    "pax_missed": 175,
+    "fuel_margin_min": 18.3,
+    "gate": "A12",
+    "gate_changed": false,
+    "gate_wait_min": 108,
+    "crew_overtime_min": 38
+   },
+   "ground_alone": {
+    "valid": true,
+    "violations": [],
+    "forced_divert": false,
+    "plan": {
+     "arrival_slot": "20:50",
+     "ground_delay_min": 86,
+     "holding_min": 0,
+     "extra_fuel_min": 0,
+     "gate": "B20",
+     "divert": false
+    },
+    "cost_usd": 12846.0,
+    "full_cost_usd": 47846.0,
+    "focal_delay_min": 86,
+    "knock_on_min": 84,
+    "system_delay_min": 170,
+    "ground_delay_min": 86,
+    "holding_min": 0,
+    "holding_fuel_kg": 0,
+    "co2_kg": 0,
+    "pax_missed": 175,
+    "fuel_margin_min": 18.3,
+    "gate": "B20",
+    "gate_changed": true,
+    "gate_wait_min": 0,
+    "crew_overtime_min": 0
+   }
+  }
+ }
+}
