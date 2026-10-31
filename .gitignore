@@ -1,0 +1,28 @@
+# Secrets: never commit real keys (this repo is public)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Deploy / tooling
+.vercel/
+.playwright-mcp/
+playwright-report/
+test-results/
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+*.log
