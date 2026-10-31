@@ -25,7 +25,7 @@ One object per agent per round: code-filled envelope plus LLM-filled body. Envel
 | `from` | `atc \| pilot \| ground` | LLM | all | equals the calling agent |
 | `round` | int 1–3 | LLM | all | equals the current round |
 | `action` | `propose \| accept \| counter \| reject` | LLM | R1 `propose`; R2 `accept \| counter \| reject`; R3 `accept \| reject` | a counter in R3 is invalid output |
-| `plan_id` | string | LLM | all | `propose`/`counter`: the agent's local id (ATC: `O#`). `accept`: the table `P#`, which must match the current table. `reject`: optional, the table `P#` refused |
+| `plan_id` | string \| null | LLM | all | `propose`/`counter`: the agent's local id (ATC: `O#`). `accept`: the table `P#`, which must match the current table. `reject`: null |
 | `plan` | object \| null | LLM | R1 propose; R2–R3 accept, counter; null on `reject` | `accept` echoes the table plan's values |
 | `plan.arrival_slot` | string `HH:MM` local | LLM | with `plan` | ATC owns it |
 | `plan.ground_delay_min` | int ≥ 0 | LLM | with `plan` | minutes |
@@ -58,7 +58,7 @@ Invalid plans never reach the table or other agents; the proposer sees its viola
 | field | type | filled by | rule |
 |---|---|---|---|
 | `plan_id` | string | code | `P1`, `P2`, … in order of going on the table |
-| `proposed_by` | `atc \| pilot \| ground \| fallback` | code | `fallback` when the deterministic solver supplies the plan |
+| `proposed_by` | `atc \| pilot \| ground \| fallback` | code | `fallback` only when no agent's round-1 plan is valid (the deterministic solver then supplies the plan); otherwise the agent that proposed it |
 | `source_id` | string | code | the proposer's local id (ATC: `O#`) |
 | `plan` | object | code | same fields as the message `plan`; gate and divert filled |
 | `check` | object | code | see §3 |
@@ -69,14 +69,14 @@ Invalid plans never reach the table or other agents; the proposer sees its viola
 
 | field | type | rule |
 |---|---|---|
-| `status` | `VALID \| INVALID \| ERROR` | INVALID if any hard rule FAILs; ERROR if the checker raises or a hard rule is UNKNOWN; VALID otherwise (assumption, SPEC) |
+| `status` | `VALID \| INVALID \| ERROR` | INVALID if any hard rule FAILs; ERROR if a hard rule is UNKNOWN or the checker errored; VALID otherwise (confirmed by Ryan) |
 | `checks[]` | object[] | one entry per evaluated rule |
 | `checks[].rule_id` | string | an id from `rule-registry.md` |
 | `checks[].result` | `PASS \| FAIL \| UNKNOWN` | soft rules (`C-CREW-1`) may FAIL without setting INVALID |
 | `checks[].actual` | number \| null | measured value |
 | `checks[].limit` | number \| null | rule limit in force |
-| `checks[].unit` | string | `min`, `s` (separation rules), `arrivals_per_h`, `count` |
-| `violations[]` | string[] | each starts with the rule id; empty when VALID |
+| `checks[].unit` | string | `min`, `s` (separation rules; the one labelled exception to the minutes rule), `arrivals_per_hour` (`C-CAP-1`), `count` |
+| `violations[]` | string[] | each starts with the rule id, e.g. `C-FUEL-1: holding 50 > limit 45`; empty when VALID |
 
 ## 4. Log line (one JSONL line per agent message)
 
@@ -123,12 +123,12 @@ The same agent's round-1 body, for the local-id convention (envelope as above wi
 
 ```json
 {
-  "from": "atc", "round": 1, "action": "propose", "plan_id": "O5",
-  "plan": {"arrival_slot": "20:22", "ground_delay_min": 58, "holding_min": 0,
+  "from": "atc", "round": 1, "action": "propose", "plan_id": "O37",
+  "plan": {"arrival_slot": "21:53", "ground_delay_min": 149, "holding_min": 0,
            "extra_fuel_min": 0, "gate": null, "divert": false},
-  "need": "Ground to confirm a gate for the 20:22 arrival.",
+  "need": "Ground to confirm a gate for the 21:53 arrival.",
   "offer": "Ground delay only; no holding and no extra fuel.",
-  "reason": "O5 passes the slot check at 20:22 with 58 min ground delay and no holding.",
+  "reason": "O37 passes the slot check at 21:53 with 149 min ground delay and no holding.",
   "flags": []
 }
 ```
@@ -138,14 +138,14 @@ The same agent's round-1 body, for the local-id convention (envelope as above wi
 ```json
 {
   "plan_id": "P1",
-  "proposed_by": "fallback",
+  "proposed_by": "atc",
   "source_id": "O37",
   "plan": {"arrival_slot": "21:53", "ground_delay_min": 149, "holding_min": 0,
            "extra_fuel_min": 0, "gate": "C14", "divert": false},
   "check": {
     "status": "VALID",
     "checks": [
-      {"rule_id": "C-CAP-1",  "result": "PASS", "actual": 45,  "limit": 45, "unit": "arrivals_per_h"},
+      {"rule_id": "C-CAP-1",  "result": "PASS", "actual": 45,  "limit": 45, "unit": "arrivals_per_hour"},
       {"rule_id": "C-SEP-1",  "result": "PASS", "actual": 120, "limit": 77, "unit": "s"},
       {"rule_id": "C-FUEL-1", "result": "PASS", "actual": 0,   "limit": 45, "unit": "min"},
       {"rule_id": "C-GATE-1", "result": "PASS", "actual": 0,   "limit": 0,  "unit": "count"}
@@ -164,9 +164,9 @@ The same agent's round-1 body, for the local-id convention (envelope as above wi
   "status": "INVALID",
   "checks": [
     {"rule_id": "C-FUEL-1", "result": "FAIL", "actual": 52, "limit": 45, "unit": "min"},
-    {"rule_id": "C-CAP-1",  "result": "PASS", "actual": 44, "limit": 45, "unit": "arrivals_per_h"}
+    {"rule_id": "C-CAP-1",  "result": "PASS", "actual": 44, "limit": 45, "unit": "arrivals_per_hour"}
   ],
-  "violations": ["C-FUEL-1: holding_min 52 exceeds limit 45 min"]
+  "violations": ["C-FUEL-1: holding 52 > limit 45"]
 }
 ```
 
@@ -194,7 +194,7 @@ The same agent's round-1 body, for the local-id convention (envelope as above wi
   "check": {
     "status": "VALID",
     "checks": [
-      {"rule_id": "C-CAP-1",  "result": "PASS", "actual": 45,  "limit": 45, "unit": "arrivals_per_h"},
+      {"rule_id": "C-CAP-1",  "result": "PASS", "actual": 45,  "limit": 45, "unit": "arrivals_per_hour"},
       {"rule_id": "C-SEP-1",  "result": "PASS", "actual": 120, "limit": 77, "unit": "s"},
       {"rule_id": "C-FUEL-1", "result": "PASS", "actual": 0,   "limit": 45, "unit": "min"},
       {"rule_id": "C-GATE-1", "result": "PASS", "actual": 0,   "limit": 0,  "unit": "count"}
