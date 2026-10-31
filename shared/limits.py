@@ -9,7 +9,7 @@ from pathlib import Path
 import openpyxl
 
 WORKBOOK_PATH = (
-    Path(__file__).parent / "data" / "raw" / "challenge2" / "challenge-2-operational-constraints.xlsx"
+    Path(__file__).resolve().parents[1] / "data" / "raw" / "challenge2" / "challenge-2-operational-constraints.xlsx"
 )
 
 # fuel_and_crew sheet: "Ground crew shift | 8 hours; overtime costs 1.5x after that"

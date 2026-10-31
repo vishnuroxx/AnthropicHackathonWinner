@@ -9,16 +9,16 @@ import random
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from limits import (
+from shared.limits import (
     GROUND_CREW_SHIFT_MIN,
     WALK_OTHER_TERMINAL_MIN,
     WALK_SAME_TERMINAL_MIN,
     AirportLimits,
     load_airport_limits,
 )
-from schema import hhmm_to_min
+from shared.schema import hhmm_to_min
 
-FLIGHTS_CSV = Path(__file__).parent / "data" / "raw" / "dot2015" / "flights.csv"
+FLIGHTS_CSV = Path(__file__).resolve().parents[1] / "data" / "raw" / "dot2015" / "flights.csv"
 # Whitelist: outcome columns (DEPARTURE_TIME, ARRIVAL_TIME, ARRIVAL_DELAY, ...) are never read.
 ALLOWED_COLUMNS = (
     "AIRLINE", "FLIGHT_NUMBER", "TAIL_NUMBER", "ORIGIN_AIRPORT", "DESTINATION_AIRPORT",

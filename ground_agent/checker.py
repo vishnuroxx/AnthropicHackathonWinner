@@ -6,9 +6,9 @@ notice, C-TURN-1 minimum turnaround (hard), C-CREW-1 crew overtime (soft: cost +
 """
 from dataclasses import dataclass, field
 
-from limits import GATE_CHANGE_NOTICE_MIN, MAX_GATE_WAIT_MIN
-from schema import Plan, hhmm_to_min
-from world_fixture import WorldState, walk_min
+from shared.limits import GATE_CHANGE_NOTICE_MIN, MAX_GATE_WAIT_MIN
+from shared.schema import Plan, hhmm_to_min
+from shared.world_fixture import WorldState, walk_min
 
 
 @dataclass
