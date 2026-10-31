@@ -197,6 +197,9 @@ facts computed by code). Agents never do arithmetic or legality checks — code 
 }
 ```
 
+### Agent independence — PROPOSED (`docs/agent-alignment.md`)
+Agents share only the message (`action`, `plan_id`, `plan`, `reason`); constraints, interests, ranking and fallback are each agent's own.
+
 ---
 
 ## 8. Constraint checker (pure code → `{valid, violations[], checks[]}`)

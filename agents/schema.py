@@ -22,7 +22,7 @@ class Plan(BaseModel):
     ground_delay_min: int = Field(description="Minutes the take-off is delayed at the origin")
     holding_min: int = Field(description="Minutes of airborne holding before landing")
     extra_fuel_min: int = Field(description="Extra holding fuel loaded before departure, in minutes")
-    gate: str = Field(description="Arrival gate id, e.g. C14")
+    gate: Optional[str] = Field(description="Arrival gate id, e.g. C14; null if not this agent's lever (ATC)")
     divert: bool = Field(description="True only if the flight diverts to its alternate airport")
 
 
