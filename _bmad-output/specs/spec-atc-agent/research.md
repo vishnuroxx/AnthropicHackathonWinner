@@ -1,6 +1,6 @@
 # ATC Research
 
-ATC-relevant facts only; for builders, not loaded by the agent. ✅ primary, 🟡 secondary, ❌ unverified. Team-wide values and citations: `docs/challenge-2-framing.md` §5 and Key citations.
+ATC-relevant facts only; for builders, not loaded by the agent. ✅ primary, 🟡 secondary, ❌ unverified. Agreed scope: `CLAUDE.md`. A1–A3 are references for the spacing values (open question); A6 is out of MVP scope (no taxiway events).
 
 | # | Fact | Status | Source |
 |---|---|---|---|
