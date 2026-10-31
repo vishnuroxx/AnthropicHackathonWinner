@@ -2,7 +2,7 @@
 
 For: Ryan (ATC lane). Status: proposal, 14:50 Sat 31 Oct. Nothing in it is built yet.
 Source: `Traceable_Consensus_Logging_Plan.md` (Downloads), which was written against contract v0.1.
-Target: contract v0.2 hybrid (`_bmad-output/specs/spec-agent-contract/`) and `CLAUDE.md` §5, §11–13.
+Target: contract v0.2 hybrid (`atc-agent/agent-spec/agent-contract/`) and `CLAUDE.md` §5, §11–13.
 
 **Already settled by Ryan (not reopened here):** (a) check status has three states: INVALID when a hard rule FAILs, ERROR when a hard rule is UNKNOWN or the checker errors, VALID otherwise. (b) Separation checks report seconds (`"s"`). (c) Violation strings start with the rule id; `proposed_by: "fallback"` only when no agent plan is valid; `plan` is null on reject. (d) C-CAP-1 compares arrivals in the landing hour with the hourly cap of 45, 31 or 37, in unit `arrivals_per_hour`. (f) Moving the contract into the framing doc is deferred.
 Another worker is editing `menu.py` `check_slot` and the contract files right now. This plan leaves both alone.
@@ -176,7 +176,7 @@ Start **after** the `check_slot` worker commits, and base the worker worktrees o
 - Files: new `atc_agent/replay.py`; edit `agent.py` (after W1).
 - `replay(run_dir) -> list[str]` rebuilds the menu as `Option(**d)` and re-runs `schema.validate` on each stored raw output, with the stored input text, flags and table. It reports any mismatch with the recorded errors or the effective message.
 - Duplicate guard: a second `respond` for the same round returns the stored message and logs `ATC_DUPLICATE_CALL`.
-- Optional: add a trace capability to the ATC spec (`spec-atc-agent`).
+- Optional: add a trace capability to the ATC spec (`atc-agent/agent-spec/`).
 - Verify: replay reports 0 mismatches on dry-run and cached-live folders, and 1 mismatch after hand-editing one raw artifact.
 
 ## 6. Acceptance checks (the subset of logging-plan §14 that the MVP meets)

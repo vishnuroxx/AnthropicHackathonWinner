@@ -7,8 +7,8 @@ companions:
   - agent-contract/SPEC.md
   - agent-contract/message-schema.md
   - agent-contract/rule-registry.md
-  - ../../../CLAUDE.md
-  - ../../../data/raw/challenge2/challenge-2-operational-constraints.xlsx
+  - ../../CLAUDE.md
+  - ../../data/raw/challenge2/challenge-2-operational-constraints.xlsx
 sources:
   - ATC_Agent_ICAP_Analysis.md (Ryan, local file; condensed into icap.md)
 ---
