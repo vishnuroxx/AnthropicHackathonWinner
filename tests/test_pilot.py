@@ -125,6 +125,25 @@ def test_llm_supplied_safety_flag_is_dropped_when_code_disagrees():
     assert msg.icap.failed_constraint.rule == "fuel"          # the table plan's failure is still recorded
 
 
+def test_red_lines_stated_up_front_and_code_derived():
+    agent = PilotAgent(dry_run=True)
+    llm = AgentMessage(**{"from": "pilot"}, round=2, action="accept", plan_id="P1", need="-", offer="-",
+                       reason="ok")                                     # Claude stated no red lines
+    msg = agent._enforce(llm, INP, 2, {"P1": plan("17:40", gd=10)})    # safe plan, nothing fails
+    rl = " | ".join(msg.icap.red_lines)
+    assert msg.action == "accept" and "30-min final reserve" in rl
+    assert "17.9 min without extra fuel" in rl and "DAL" in rl         # holdable before divert, alternate
+    assert "block-in by 19:00 ORD time" in rl                           # 06:00 report + 13 h
+
+
+def test_rank_key_puts_last_of_day_before_pax_count():
+    from agents.pilot import _rank_key
+    base = assess_plan("X", plan("17:40", gd=10), INP, RULES)
+    strands_last = base.__class__(**{**base.__dict__, "pax_missed": 5, "last_of_day_missed": ("AA300",)})
+    misses_more = base.__class__(**{**base.__dict__, "pax_missed": 40, "last_of_day_missed": ()})
+    assert _rank_key(misses_more) < _rank_key(strands_last)
+
+
 class _SlowFakeMessages:
     """Fake async client: every call takes 0.3 s and returns a valid counter (no network)."""
     async def parse(self, **kw):

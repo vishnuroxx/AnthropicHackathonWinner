@@ -41,6 +41,7 @@ class ICAPBrief(BaseModel):
     """Optional decision brief (Interests, Constraints, Alternatives, Priorities). Additive: agents and the
     middleman may ignore it; the consensus log and decision document show it."""
     interest: str = Field(description="The outcome being protected and why (interest, not position)")
+    red_lines: list[str] = Field(default_factory=list, description="Hard limits this agent will never trade, stated up front")
     failed_constraint: Optional[FailedConstraint] = None
     alternatives: list[Alternative] = Field(default_factory=list, description="Ranked, best first")
     concessions: list[str] = Field(default_factory=list, description="What this agent can give up")
