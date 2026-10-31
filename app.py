@@ -286,7 +286,9 @@ st.write(f"Was due to leave at **{hhmm(row['SCHEDULED_DEPARTURE'])}** and land a
 with st.expander("Limits we have to respect"):
     icons = {"Holdable": "⛽", "Scheduled": "🚪", "Free": "🟢", "Slot": "🛬", "Connecting": "🧑‍🤝‍🧑", "Ground": "👷"}
     cells = []
-    for label, val in key_constraints(spec["airline"], spec["flight_number"], spec["origin"]):
+    with st.spinner("Loading limits…"):
+        limits = key_constraints(spec["airline"], spec["flight_number"], spec["origin"])
+    for label, val in limits:
         sim = "(synthetic)" in val
         clean = html.escape(val.replace(" (synthetic)", "").replace(" (derived)", "").replace(" (workbook)", ""))
         tag = '<span class="tag t-sim">simulated</span>' if sim else '<span class="tag t-real">real rule</span>'
