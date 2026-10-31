@@ -362,6 +362,8 @@ if res and res.get("row_id") == row_id:
             st.session_state["approval"] = {"row_id": row_id, "decision": past, "at": datetime.now().isoformat(timespec="seconds")}
             st.session_state["stage"] = 5
             st.toast(f"Plan {past.lower()}", icon="✅" if past == "Approved" else "⛔")
+            if past == "Approved":
+                st.balloons()
             render_stages(stage_slot, 5)
     if "approval" in st.session_state:
         d = st.session_state["approval"]
