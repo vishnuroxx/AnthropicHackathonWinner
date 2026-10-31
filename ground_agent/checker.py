@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from agents.schema import Plan
+from ground_agent.acdm import acdm_flags
 from ground_agent.assumptions import MAX_GATE_WAIT_MIN
 from ground_agent.inputs import WorldState, walk_min
 from ground_agent.timeutil import hhmm_to_min
@@ -68,9 +69,13 @@ def _earliest_free_start(windows, arrival: int, turnaround: int) -> int:
 
 # Checks a plan against Ground's constraints and computes the Ground metrics used by cost.
 # Args: plan - the plan under test; state - world state; turnaround_min - override for tests and
-#   future use (the shared Plan has no turnaround field, so None means the airport minimum).
-# Returns: GroundCheck (valid=False if any hard rule is violated).
-def check_ground(plan: Plan, state: WorldState, turnaround_min: Optional[int] = None) -> GroundCheck:
+#   future use (the shared Plan has no turnaround field, so None means the airport minimum);
+#   previous_ready_min - ready time last reported (previous table plan) for the soft A-CDM update flag;
+#   None means the scheduled ready time (scheduled arrival + minimum turnaround).
+# Returns: GroundCheck (valid=False if any hard rule is violated; A-CDM flags are report-only).
+def check_ground(
+    plan: Plan, state: WorldState, turnaround_min: Optional[int] = None, previous_ready_min: Optional[int] = None,
+) -> GroundCheck:
     arrival = _slot_to_min(plan.arrival_slot, state.scheduled_arrival_min)
     turnaround = turnaround_min if turnaround_min is not None else state.limits.min_turnaround_min
     violations: list[Violation] = []
@@ -123,6 +128,11 @@ def check_ground(plan: Plan, state: WorldState, turnaround_min: Optional[int] = 
     best_case_end = state.disrupted_arrival_min + state.limits.min_turnaround_min
     unavoidable = max(0, best_case_end - state.next_departure_min)
 
+    reference_ready = (
+        previous_ready_min if previous_ready_min is not None
+        else state.scheduled_arrival_min + state.limits.min_turnaround_min
+    )
+
     walk = walk_min(state.scheduled_gate, plan.gate) if gate_known else 0
     missed = state.connecting_pax if changed and walk > state.connection_slack_min else 0
     if missed:
@@ -131,6 +141,9 @@ def check_ground(plan: Plan, state: WorldState, turnaround_min: Optional[int] = 
         "gate_wait_min": wait, "turnaround_min": turnaround,
         "occupancy_start_min": occ_start, "occupancy_end_min": occ_end,
         "overtime_min": overtime,
+        "turnaround_delay_min": max(0, occ_end - (arrival + state.limits.min_turnaround_min)),
+        "ready_time_min": occ_end,  # earliest ready for the next departure (TOBT-style)
+        "acdm_flags": acdm_flags(occ_end, reference_ready, state.next_departure_min),
         "knock_on_delay_min": knock_on,
         "avoidable_knock_on_min": max(0, knock_on - unavoidable),
         "gate_changed": changed, "walk_min": walk, "missed_connections": missed,

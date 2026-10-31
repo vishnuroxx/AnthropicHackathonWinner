@@ -18,7 +18,9 @@ from agents.schema import AgentMessage, Alternative, FailedConstraint, ICAPBrief
 from ground_agent.assumptions import LIMITS_SOURCE, MAX_GATE_WAIT_MIN, OVERTIME_MULTIPLIER
 from ground_agent.checker import GroundCheck, check_ground
 from ground_agent.cost import cost_ground
+from ground_agent.icap import build_icap
 from ground_agent.inputs import WorldState, walk_min
+from ground_agent.options import free_gate_ids
 from ground_agent.timeutil import min_to_hhmm
 
 DEFAULT_MODEL = "claude-sonnet-5-5"
@@ -43,6 +45,7 @@ class GroundDecision(BaseModel):
     action: Literal["propose", "accept", "counter", "reject"]
     plan_id: Optional[str] = None
     gate: str
+    interests_cited: list[str]
     need: str
     offer: str
     reason: str
@@ -69,11 +72,10 @@ def assert_no_hindsight(obj) -> None:
 # Returns: JSON-serialisable dict.
 # Raises: ValueError if a hindsight field slipped in.
 def build_ground_facts(state: WorldState) -> dict:
-    horizon_end = state.disrupted_arrival_min + 240
+    icap = build_icap(state)
     free_gates = [
         {"gate": g, "terminal": g[0], "walk_min_from_scheduled_gate": walk_min(state.scheduled_gate, g)}
-        for g, w in state.gate_busy.items()
-        if g != state.scheduled_gate and not any(x.start < horizon_end and x.end > state.now_min for x in w)
+        for g in free_gate_ids(state)
     ]
     confirm_by = min_to_hhmm(state.disrupted_arrival_min - state.gate_change_notice_min)
     facts = {
@@ -109,7 +111,8 @@ def build_ground_facts(state: WorldState) -> dict:
             f"Accept crew overtime (soft cost, {OVERTIME_MULTIPLIER}x) if it avoids a worse delay",
         ],
         "deadline": f"Gate change must be confirmed by {confirm_by} ({state.gate_change_notice_min} min before arrival)",
-        "alternatives": [],
+        "alternatives": icap["alternatives"]["ranked"],
+        "icap": icap,
         "provenance": state.provenance,
     }
     assert_no_hindsight(facts)
@@ -154,10 +157,15 @@ class GroundAgent:
         self, state: WorldState, round_no: int, table_plan_id: str, table_plan: Plan,
         table_check: GroundCheck, history: list[dict],
     ) -> AgentMessage:
+        cost = cost_ground(table_check)
+        batna = build_icap(state)["alternatives"]["batna"]
         payload = {
             "round": round_no, "table_plan_id": table_plan_id,
             "table_plan": table_plan.model_dump(),
-            "ground_check": table_check.to_dict(), "ground_cost": cost_ground(table_check),
+            "ground_check": table_check.to_dict(), "ground_cost": cost,
+            "ready_time": min_to_hhmm(table_check.metrics["ready_time_min"]),
+            # Table plan's Ground cost minus the cheapest valid Ground option at the disrupted arrival.
+            "vs_batna_usd": None if batna is None else round(cost["total"] - batna["cost_usd"], 2),
             "log": history,
         }
         user = (
@@ -195,7 +203,7 @@ class GroundAgent:
             if resp.stop_reason in ("refusal", "max_tokens") or resp.parsed_output is None:
                 return self._reject(facts, round_no, f"no usable output ({resp.stop_reason})")
             try:
-                self._validate(resp.parsed_output, mode)
+                self._validate(resp.parsed_output, mode, [i["id"] for i in facts["icap"]["interests"]])
             except ValueError as e:
                 messages.append({"role": "user", "content": f"Your reply was invalid: {e}. Reply again."})
                 continue
@@ -208,9 +216,14 @@ class GroundAgent:
         return self._reject(facts, round_no, "invalid output twice")
 
     # Validates a decision against the protocol (code-side, not trusted to the model).
-    # Args: d - model decision; mode - "propose" or "respond".
+    # Args: d - model decision; mode - "propose" or "respond"; interest_ids - valid ICAP interest ids.
     # Raises: ValueError describing the problem.
-    def _validate(self, d: GroundDecision, mode: str) -> None:
+    def _validate(self, d: GroundDecision, mode: str, interest_ids: list[str]) -> None:
+        unknown = sorted(set(d.interests_cited) - set(interest_ids))
+        if unknown:
+            raise ValueError(f"unknown interest ids {unknown}; use only {interest_ids}")
+        if d.action != "reject" and not d.interests_cited:
+            raise ValueError("cite at least one interest id from the ICAP")
         if mode == "propose" and d.action != "propose":
             raise ValueError("round 1 action must be propose")
         if mode == "respond" and d.action not in ("accept", "counter", "reject"):
@@ -234,16 +247,19 @@ class GroundAgent:
         elif d.action in ("propose", "counter"):
             plan = base_plan.model_copy(update={"gate": d.gate})
         flags = check_ground(plan, state).metrics["flags"] if plan is not None else []
-        icap = self._icap(facts, d.requested_next_action, table_check if d.action in ("counter", "reject") else None)
+        icap = self._icap(facts, d.requested_next_action, table_check if d.action in ("counter", "reject") else None,
+                          d.interests_cited)
         return AgentMessage(
             **{"from": "ground"}, round=round_no, action=d.action, plan_id=plan_id, plan=plan,
             need=d.need, offer=d.offer, reason=d.reason, flags=flags, icap=icap,
         )
 
     # Builds the shared ICAPBrief from code facts (+ the model's requested next action).
-    # Args: facts - facts dict; requested - model text; table_check - check of the plan being countered.
+    # Args: facts - facts dict; requested - model text; table_check - check of the plan being countered;
+    #   cited - validated interest ids the decision relied on (shown after the interest text).
     # Returns: ICAPBrief.
-    def _icap(self, facts: dict, requested: str, table_check: Optional[GroundCheck]) -> ICAPBrief:
+    def _icap(self, facts: dict, requested: str, table_check: Optional[GroundCheck],
+              cited: Optional[list[str]] = None) -> ICAPBrief:
         failed = None
         if table_check is not None and not table_check.valid:
             failed = FailedConstraint(
@@ -251,7 +267,8 @@ class GroundAgent:
                 evidence=[f"table_plan.ground_check.{v.rule_id}: {v.message}" for v in table_check.violations],
             )
         return ICAPBrief(
-            interest=facts["interest"], failed_constraint=failed,
+            interest=facts["interest"] + (f" [cites {', '.join(cited)}]" if cited else ""),
+            failed_constraint=failed,
             alternatives=[Alternative(plan_ref=a["plan_ref"], summary=a["summary"], status="candidate")
                           for a in facts["alternatives"][:3]],
             concessions=facts["concessions"], deadline=facts["deadline"],

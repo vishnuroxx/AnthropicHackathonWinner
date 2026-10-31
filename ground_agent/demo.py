@@ -15,6 +15,7 @@ from ground_agent.agent import GroundAgent, baseline_plan
 from ground_agent.assumptions import ASSUMPTIONS
 from ground_agent.checker import check_ground
 from ground_agent.cost import cost_ground
+from ground_agent.icap import build_icap
 from ground_agent.inputs import build_world
 from ground_agent.timeutil import min_to_hhmm
 
@@ -40,6 +41,14 @@ async def main():
           f"scheduled {min_to_hhmm(state.scheduled_arrival_min)}, disrupted {min_to_hhmm(state.disrupted_arrival_min)}")
     print("provenance:", json.dumps(state.provenance, indent=2))
     print("Ground assumptions to state in the demo:", json.dumps(ASSUMPTIONS, indent=2))
+
+    icap = build_icap(state)
+    print("\nICAP priorities (rank, interest, stake USD):")
+    for p in icap["priorities"]["ranked"]:
+        print(f"  {p['rank']}. {p['id']} {p['name']}: {p['stake_usd']}")
+    print("ICAP notes:", icap["notes"] or "none")
+    print("ICAP options:", json.dumps(icap["alternatives"]["options"]))
+    print("BATNA:", json.dumps(icap["alternatives"]["batna"]))
 
     agent = GroundAgent(anthropic.AsyncAnthropic(), log_path=REPO / "logs" / "ground_calls.jsonl")
     msg = await agent.propose(state)
