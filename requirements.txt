@@ -1,0 +1,2 @@
+anthropic>=0.70
+openpyxl>=3.1
