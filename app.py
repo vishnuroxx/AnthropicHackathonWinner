@@ -264,9 +264,25 @@ load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="ATC · Pilot · Ground", layout="wide")
 st.markdown('<style>\n.block-container{max-width:1200px;padding-top:2rem}\n.hero{background:linear-gradient(120deg,#0b2545,#13315c 55%,#1d4e89);color:#fff;padding:22px 28px;border-radius:16px;margin-bottom:16px;box-shadow:0 6px 20px #0b254533}\n.hero h1{color:#fff;margin:0;font-size:2rem}\n.hero p{color:#cfe0f5;margin:6px 0 0}\n[data-testid="stMetric"]{background:#fff;border:1px solid #e3e9f1;border-radius:12px;padding:12px 16px;box-shadow:0 1px 4px #0001}\n.team{background:#fff;border:1px solid #e3e9f1;border-left:5px solid var(--c);border-radius:12px;padding:12px 14px;min-height:120px;box-shadow:0 1px 4px #0001;overflow-wrap:anywhere}\n[data-testid="stMetric"]{min-height:150px;height:100%}[data-testid="stMetricValue"],[data-testid="stMetricValue"] *{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;font-size:1.6rem;line-height:1.2}.team{min-height:250px;height:100%}.team b{font-size:1rem}.team .why{color:#556;font-size:.85rem;margin-top:6px}\n</style>' + '<div class="hero"><h1>✈️ Flight Disruption Assistant</h1><p>Air traffic control, the pilot and the ground crew agree on a recovery plan. You make the final call.</p></div>', unsafe_allow_html=True)
 
+SIDEBAR_CSS = """<style>
+[data-testid="stSidebar"]{background:linear-gradient(180deg,#0b2545 0%,#13315c 60%,#1d4e89 100%)}
+[data-testid="stSidebar"] *{color:#e6eef8}
+[data-testid="stSidebar"] [data-baseweb="select"] *{color:#1b2a41}
+.sb-brand{font-size:1.25rem;font-weight:700;margin-bottom:2px}
+.sb-sub{font-size:.8rem;color:#a9c1e0!important;margin-bottom:18px}
+.sb-card{background:#ffffff14;border:1px solid #ffffff22;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.82rem;line-height:1.5}
+.sb-card b{color:#fff}
+</style>"""
 with st.sidebar:
-    row_id = st.selectbox("Pick a disrupted flight", list(DEMO_ROWS), format_func=lambda k: DEMO_ROWS[k]["label"])
-    use_cache = st.toggle("Instant replay (saved run)", value=True)
+    st.markdown(SIDEBAR_CSS + '<div class="sb-brand">✈️ Ops Control</div><div class="sb-sub">Duty manager console · DFW · 24 Apr 2015</div>',
+                unsafe_allow_html=True)
+    row_id = st.selectbox("🛫 Disrupted flight", list(DEMO_ROWS), format_func=lambda k: DEMO_ROWS[k]["label"])
+    use_cache = st.toggle("⚡ Instant replay (saved run)", value=True,
+                          help="On: replay a saved run instantly. Off: the three AI teams negotiate live.")
+    st.markdown('<div class="sb-card"><b>Who is at the table</b><br>🗼 Air traffic control: runway slots<br>'
+                '👨‍✈️ Pilot: fuel and safety<br>🧳 Ground crew: gates and staff</div>'
+                '<div class="sb-card"><b>Ground rules</b><br>✅ Code checks every safety rule<br>🔁 3 rounds max<br>'
+                '🧮 No deal → cheapest safe plan<br>🙋 You make the final call</div>', unsafe_allow_html=True)
 spec = DEMO_ROWS[row_id]
 if st.session_state.get("row_id") != row_id:
     st.session_state.update(row_id=row_id, stage=0)
