@@ -10,13 +10,13 @@ from pathlib import Path
 import anthropic
 from dotenv import load_dotenv
 
+from agents.constraints import REPO
 from ground_agent.agent import GroundAgent, baseline_plan
+from ground_agent.assumptions import ASSUMPTIONS
 from ground_agent.checker import check_ground
 from ground_agent.cost import cost_ground
-from shared.schema import min_to_hhmm
-from shared.world_fixture import build_world
-
-ROOT = Path(__file__).resolve().parents[1]
+from ground_agent.inputs import build_world
+from ground_agent.timeutil import min_to_hhmm
 
 
 # Prints a plan's Ground check and cost, all computed by code.
@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Returns: the GroundCheck.
 def show(title, plan, state):
     check = check_ground(plan, state)
-    print(f"\n--- {title}: gate {plan.gate}, arrival {plan.arrival_slot}, turnaround {plan.turnaround_min or state.limits.min_turnaround_min}")
+    print(f"\n--- {title}: gate {plan.gate}, arrival {plan.arrival_slot}")
     print("valid:", check.valid, "| violations:", [v.rule_id for v in check.violations])
     print("metrics:", json.dumps(check.metrics))
     print("cost:", cost_ground(check))
@@ -33,14 +33,15 @@ def show(title, plan, state):
 
 # Runs round 1 (propose) and round 2 (respond to a stub table plan) for the Ground agent.
 async def main():
-    load_dotenv(ROOT / ".env.local")
-    load_dotenv(ROOT / ".env")
+    load_dotenv(REPO / ".env.local")
+    load_dotenv(REPO / ".env")
     state = build_world()
     print(f"{state.focal_flight} {state.tail} {state.event_type} +{state.event_magnitude_min} min at {state.airport}; "
           f"scheduled {min_to_hhmm(state.scheduled_arrival_min)}, disrupted {min_to_hhmm(state.disrupted_arrival_min)}")
     print("provenance:", json.dumps(state.provenance, indent=2))
+    print("Ground assumptions to state in the demo:", json.dumps(ASSUMPTIONS, indent=2))
 
-    agent = GroundAgent(anthropic.AsyncAnthropic(), log_path=ROOT / "logs" / "ground_calls.jsonl")
+    agent = GroundAgent(anthropic.AsyncAnthropic(), log_path=REPO / "logs" / "ground_calls.jsonl")
     msg = await agent.propose(state)
     print("\nROUND 1 message:\n", msg.model_dump_json(by_alias=True, indent=2))
     if msg.plan:

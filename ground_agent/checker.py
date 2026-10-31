@@ -2,13 +2,16 @@
 
 Rules: C-GATE-1 gate free (waiting allowed up to MAX_GATE_WAIT_MIN), C-GATE-2 gate-change
 notice, C-TURN-1 minimum turnaround (hard), C-CREW-1 crew overtime (soft: cost + flag).
-`check_ground` is the entry point for the shared checker.py.
+`check_ground` is the entry point for the shared checker.py. Limits come from the workbook
+(via WorldState); the wait cap is a labelled assumption (ground_agent/assumptions.py).
 """
 from dataclasses import dataclass, field
+from typing import Optional
 
-from shared.limits import GATE_CHANGE_NOTICE_MIN, MAX_GATE_WAIT_MIN
-from shared.schema import Plan, hhmm_to_min
-from shared.world_fixture import WorldState, walk_min
+from agents.schema import Plan
+from ground_agent.assumptions import MAX_GATE_WAIT_MIN
+from ground_agent.inputs import WorldState, walk_min
+from ground_agent.timeutil import hhmm_to_min
 
 
 @dataclass
@@ -64,11 +67,12 @@ def _earliest_free_start(windows, arrival: int, turnaround: int) -> int:
 
 
 # Checks a plan against Ground's constraints and computes the Ground metrics used by cost.
-# Args: plan - the plan under test; state - world state.
+# Args: plan - the plan under test; state - world state; turnaround_min - override for tests and
+#   future use (the shared Plan has no turnaround field, so None means the airport minimum).
 # Returns: GroundCheck (valid=False if any hard rule is violated).
-def check_ground(plan: Plan, state: WorldState) -> GroundCheck:
+def check_ground(plan: Plan, state: WorldState, turnaround_min: Optional[int] = None) -> GroundCheck:
     arrival = _slot_to_min(plan.arrival_slot, state.scheduled_arrival_min)
-    turnaround = plan.turnaround_min if plan.turnaround_min is not None else state.limits.min_turnaround_min
+    turnaround = turnaround_min if turnaround_min is not None else state.limits.min_turnaround_min
     violations: list[Violation] = []
     checks: list[Check] = []
     flags: list[str] = []
@@ -98,10 +102,10 @@ def check_ground(plan: Plan, state: WorldState) -> GroundCheck:
     # C-GATE-2
     changed = plan.gate != state.scheduled_gate
     notice = arrival - state.now_min
-    hard("C-GATE-2", not changed or notice >= GATE_CHANGE_NOTICE_MIN,
-         "gate unchanged" if not changed else f"gate change notice {notice} min >= {GATE_CHANGE_NOTICE_MIN}",
-         f"gate change notice {notice} min < {GATE_CHANGE_NOTICE_MIN}",
-         {"changed": changed, "notice_min": notice, "required": GATE_CHANGE_NOTICE_MIN})
+    hard("C-GATE-2", not changed or notice >= state.gate_change_notice_min,
+         "gate unchanged" if not changed else f"gate change notice {notice} min >= {state.gate_change_notice_min}",
+         f"gate change notice {notice} min < {state.gate_change_notice_min}",
+         {"changed": changed, "notice_min": notice, "required": state.gate_change_notice_min})
 
     # C-CREW-1 (soft)
     occ_start = arrival + wait

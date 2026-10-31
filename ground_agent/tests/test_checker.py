@@ -1,8 +1,8 @@
+from agents.constraints import airport_limits
 from ground_agent.checker import check_ground
 from ground_agent.cost import cost_ground
+from ground_agent.inputs import BusyWindow, build_world
 from ground_agent.tests.helpers import make_state, plan
-from shared.limits import load_airport_limits
-from shared.world_fixture import BusyWindow, build_world
 
 
 def rules(check):
@@ -10,8 +10,8 @@ def rules(check):
 
 
 def test_workbook_limits_dfw():
-    lim = load_airport_limits("DFW")
-    assert (lim.gates, lim.min_turnaround_min, lim.spare_gates) == (150, 45, 3)
+    lim = airport_limits()["DFW"]
+    assert (lim.gates, lim.min_turnaround_min, lim.spare_gates_at_any_time) == (150, 45, 3)
 
 
 def test_valid_plan():
@@ -42,7 +42,11 @@ def test_gate_change_late_notice_is_c_gate_2():
 
 
 def test_short_turnaround_is_c_turn_1():
-    assert rules(check_ground(plan(turnaround=30), make_state())) == {"C-TURN-1"}
+    assert rules(check_ground(plan(), make_state(), turnaround_min=30)) == {"C-TURN-1"}
+
+
+def test_default_turnaround_is_airport_minimum():
+    assert check_ground(plan(), make_state()).metrics["turnaround_min"] == 45
 
 
 def test_overtime_is_soft():
@@ -55,6 +59,7 @@ def test_overtime_is_soft():
 def test_other_terminal_gate_change_risks_connections():
     c = check_ground(plan(gate="C3"), make_state())  # walk 15 > slack 10
     assert c.valid and c.metrics["missed_connections"] == 30
+    assert "CONNECTION_RISK" in c.metrics["flags"]
     assert cost_ground(c)["items"]["missed_connections"] == 6000.0
 
 
@@ -62,3 +67,4 @@ def test_demo_world_builds_from_real_row():
     s = build_world()
     assert (s.focal_flight, s.airport, s.event_type, s.event_magnitude_min) == ("AA1480", "DFW", "weather", 165)
     assert sum(1 for w in s.gate_busy.values() if not w) == 3  # spare gates from the workbook
+    assert (s.crew_shift_min, s.gate_change_notice_min) == (480, 20)  # read from the workbook

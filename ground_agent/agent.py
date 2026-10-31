@@ -1,7 +1,10 @@
 """Ground Ops agent: separate system prompt, one call per round, only Ground's facts.
 
-The model decides only gate + turnaround (GroundDecision). Code assembles the full Plan, so
-Ground cannot touch ATC/Pilot fields. Invalid output is re-asked once, then becomes `reject`.
+The model decides only the gate (GroundDecision) plus short text. Code assembles the shared
+AgentMessage (agents/schema.py): the full Plan, the safety flags, and the ICAP brief (interest,
+concessions, deadline, failed constraint). An accept of a plan that is not on the table, or that
+fails the Ground check, is overridden to `reject` in code (same pattern as the Pilot agent).
+Invalid output is re-asked once, then becomes `reject`.
 """
 import json
 import time
@@ -9,48 +12,41 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import anthropic
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError
 
-from ground_agent.checker import GroundCheck
+from agents.schema import AgentMessage, Alternative, FailedConstraint, ICAPBrief, Plan, validate_ranges
+from ground_agent.assumptions import LIMITS_SOURCE, MAX_GATE_WAIT_MIN, OVERTIME_MULTIPLIER
+from ground_agent.checker import GroundCheck, check_ground
 from ground_agent.cost import cost_ground
-from shared.limits import GATE_CHANGE_NOTICE_MIN, MAX_GATE_WAIT_MIN, OVERTIME_MULTIPLIER
-from shared.schema import AgentMessage, Plan, min_to_hhmm
-from shared.world_fixture import WorldState, walk_min
+from ground_agent.inputs import WorldState, walk_min
+from ground_agent.timeutil import min_to_hhmm
 
 DEFAULT_MODEL = "claude-sonnet-5-5"
 MAX_TOKENS = 4000
 EFFORT = "medium"
 PROMPT_PATH = Path(__file__).parent / "prompts" / "ground.md"
-ALLOWED_FLAGS = {"CREW_OVERTIME", "CONNECTION_RISK", "GATE_SHORTAGE"}
 # Outcome columns agents must never see (CLAUDE.md section 6, "No hindsight").
 FORBIDDEN_FIELDS = {
     "departure_time", "arrival_time", "arrival_delay", "departure_delay",
     "wheels_on", "wheels_off", "elapsed_time", "air_time", "taxi_in", "taxi_out",
 }
+INTERESTS = {
+    "weather": "Land onto a free gate with no wait, keep the turnaround at the airport minimum "
+               "and the crew inside its shift.",
+    "late_aircraft": "Protect the next departure: turnaround at the airport minimum, no crew overtime, "
+                     "gate ready when the aircraft is.",
+}
 
 
 class GroundDecision(BaseModel):
-    """What the model returns: only Ground's levers plus the short text fields."""
+    """What the model returns: Ground's one lever (the gate) plus the short text fields."""
     action: Literal["propose", "accept", "counter", "reject"]
     plan_id: Optional[str] = None
     gate: str
-    turnaround_min: int
     need: str
     offer: str
     reason: str
-    flags: list[str]
-
-    # Word limits from the message contract (need/offer 20, reason 30).
-    # Args: v - text; info - pydantic field info.
-    # Returns: v unchanged.
-    # Raises: ValueError if over the limit.
-    @field_validator("need", "offer", "reason")
-    @classmethod
-    def _word_limit(cls, v: str, info) -> str:
-        limit = 30 if info.field_name == "reason" else 20
-        if len(v.split()) > limit:
-            raise ValueError(f"{info.field_name} exceeds {limit} words")
-        return v
+    requested_next_action: str
 
 
 # Raises if any outcome ("hindsight") column name appears as a key anywhere in obj.
@@ -79,15 +75,16 @@ def build_ground_facts(state: WorldState) -> dict:
         for g, w in state.gate_busy.items()
         if g != state.scheduled_gate and not any(x.start < horizon_end and x.end > state.now_min for x in w)
     ]
+    confirm_by = min_to_hhmm(state.disrupted_arrival_min - state.gate_change_notice_min)
     facts = {
         "airport": state.airport,
         "limits": {
             "gates": state.limits.gates, "min_turnaround_min": state.limits.min_turnaround_min,
-            "spare_gates_at_any_time": state.limits.spare_gates, "source": state.limits.source,
+            "spare_gates_at_any_time": state.limits.spare_gates_at_any_time, "source": LIMITS_SOURCE,
         },
         "rules": {
-            "gate_change_notice_min": GATE_CHANGE_NOTICE_MIN, "max_gate_wait_min": MAX_GATE_WAIT_MIN,
-            "crew_overtime_multiplier": OVERTIME_MULTIPLIER,
+            "gate_change_notice_min": state.gate_change_notice_min, "max_gate_wait_min": MAX_GATE_WAIT_MIN,
+            "crew_shift_min": state.crew_shift_min, "crew_overtime_multiplier": OVERTIME_MULTIPLIER,
         },
         "event": {"type": state.event_type, "magnitude_min": state.event_magnitude_min},
         "focal_flight": {
@@ -105,6 +102,14 @@ def build_ground_facts(state: WorldState) -> dict:
         ],
         "free_gates": free_gates,
         "crew_shift_end": min_to_hhmm(state.crew_shift_end_min),
+        "interest": INTERESTS[state.event_type],
+        "concessions": [
+            f"Wait up to {MAX_GATE_WAIT_MIN} min for the scheduled gate {state.scheduled_gate}",
+            f"Change to a free gate if confirmed by {confirm_by}",
+            f"Accept crew overtime (soft cost, {OVERTIME_MULTIPLIER}x) if it avoids a worse delay",
+        ],
+        "deadline": f"Gate change must be confirmed by {confirm_by} ({state.gate_change_notice_min} min before arrival)",
+        "alternatives": [],
         "provenance": state.provenance,
     }
     assert_no_hindsight(facts)
@@ -131,13 +136,13 @@ class GroundAgent:
         self.call_log: list[dict] = []
         self._role_prompt = PROMPT_PATH.read_text()
 
-    # Round 1: parallel analysis. Ground proposes its preferred gate and turnaround.
+    # Round 1: parallel analysis. Ground proposes its preferred gate.
     # Args: state - world state.
     # Returns: AgentMessage with action "propose" (or "reject" if the model never gave valid output).
     async def propose(self, state: WorldState) -> AgentMessage:
         user = (
-            "Round 1. Propose your preferred gate and turnaround for the focal flight, "
-            "using only the facts block. Action must be `propose`."
+            "Round 1. Propose your preferred gate for the focal flight, "
+            "using only the facts block. Action must be `propose`. Fill requested_next_action."
         )
         return await self._run(state, 1, user, "propose", baseline_plan(state), None, None)
 
@@ -156,8 +161,8 @@ class GroundAgent:
             "log": history,
         }
         user = (
-            f"Round {round_no}. Respond to the plan on the table: `accept`, `counter` or `reject`.\n"
-            + json.dumps(payload, sort_keys=True)
+            f"Round {round_no}. Respond to the plan on the table: `accept`, `counter` or `reject`. "
+            "Fill requested_next_action.\n" + json.dumps(payload, sort_keys=True)
         )
         return await self._run(state, round_no, user, "respond", table_plan, table_plan_id, table_check)
 
@@ -165,9 +170,10 @@ class GroundAgent:
     # Args: see propose/respond; mode - "propose" or "respond"; base_plan - plan the decision edits.
     # Returns: AgentMessage.
     async def _run(self, state, round_no, user, mode, base_plan, table_id, table_check) -> AgentMessage:
+        facts = build_ground_facts(state)
         system = [
             {"type": "text", "text": self._role_prompt},
-            {"type": "text", "text": "FACTS:\n" + json.dumps(build_ground_facts(state), sort_keys=True),
+            {"type": "text", "text": "FACTS:\n" + json.dumps(facts, sort_keys=True),
              "cache_control": {"type": "ephemeral"}},
         ]
         messages = [{"role": "user", "content": user}]
@@ -184,57 +190,93 @@ class GroundAgent:
                 continue
             except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
                 self._log(round_no, attempt, None, t0, error=f"api: {type(e).__name__}")
-                return self._reject(state, round_no, "API error")
+                return self._reject(facts, round_no, "API error")
             self._log(round_no, attempt, resp, t0)
             if resp.stop_reason in ("refusal", "max_tokens") or resp.parsed_output is None:
-                return self._reject(state, round_no, f"no usable output ({resp.stop_reason})")
+                return self._reject(facts, round_no, f"no usable output ({resp.stop_reason})")
             try:
-                self._validate(resp.parsed_output, mode, table_id, table_check)
+                self._validate(resp.parsed_output, mode)
             except ValueError as e:
                 messages.append({"role": "user", "content": f"Your reply was invalid: {e}. Reply again."})
                 continue
-            return self._to_message(resp.parsed_output, round_no, base_plan, table_id)
-        return self._reject(state, round_no, "invalid output twice")
+            msg = self._to_message(resp.parsed_output, state, round_no, base_plan, table_id, table_check, facts)
+            problems = validate_ranges(msg)
+            if problems:
+                messages.append({"role": "user", "content": f"Fix these problems and reply again: {problems}"})
+                continue
+            return msg
+        return self._reject(facts, round_no, "invalid output twice")
 
     # Validates a decision against the protocol (code-side, not trusted to the model).
+    # Args: d - model decision; mode - "propose" or "respond".
     # Raises: ValueError describing the problem.
-    def _validate(self, d: GroundDecision, mode: str, table_id, table_check) -> None:
+    def _validate(self, d: GroundDecision, mode: str) -> None:
         if mode == "propose" and d.action != "propose":
             raise ValueError("round 1 action must be propose")
         if mode == "respond" and d.action not in ("accept", "counter", "reject"):
             raise ValueError("action must be accept, counter or reject")
-        if d.action == "accept":
-            if d.plan_id != table_id:
-                raise ValueError(f"accept must carry plan_id {table_id}")
-            if not table_check.valid:
-                raise ValueError("cannot accept a plan whose Ground check is invalid")
-        if d.action in ("propose", "counter") and (not d.gate or d.turnaround_min <= 0):
-            raise ValueError("gate and a positive turnaround_min are required")
-        bad = set(d.flags) - ALLOWED_FLAGS
-        if bad:
-            raise ValueError(f"unknown flags {sorted(bad)}")
+        if d.action in ("propose", "counter") and not d.gate:
+            raise ValueError("a gate is required")
 
-    # Builds the full AgentMessage: code fills every non-Ground plan field.
-    # Args: d - validated decision; base_plan - baseline (round 1) or table plan.
+    # Builds the full AgentMessage. Code fills every non-Ground plan field, the safety flags and the
+    # ICAP brief; an accept of an off-table or Ground-invalid plan is overridden to reject.
+    # Args: d - validated decision; base_plan - baseline (round 1) or table plan; table_id/table_check -
+    #   the plan on the table and its Ground check (None in round 1); facts - this call's facts dict.
     # Returns: AgentMessage.
-    def _to_message(self, d: GroundDecision, round_no: int, base_plan: Plan, table_id) -> AgentMessage:
+    def _to_message(self, d, state, round_no, base_plan, table_id, table_check, facts) -> AgentMessage:
         plan, plan_id = None, None
         if d.action == "accept":
+            if d.plan_id != table_id:
+                return self._override(facts, round_no, table_check, "accepted plan_id is not the plan on the table")
+            if not table_check.valid:
+                return self._override(facts, round_no, table_check, "the table plan fails the Ground check")
             plan, plan_id = base_plan, table_id
         elif d.action in ("propose", "counter"):
-            plan = base_plan.model_copy(update={"gate": d.gate, "turnaround_min": d.turnaround_min})
+            plan = base_plan.model_copy(update={"gate": d.gate})
+        flags = check_ground(plan, state).metrics["flags"] if plan is not None else []
+        icap = self._icap(facts, d.requested_next_action, table_check if d.action in ("counter", "reject") else None)
         return AgentMessage(
             **{"from": "ground"}, round=round_no, action=d.action, plan_id=plan_id, plan=plan,
-            need=d.need, offer=d.offer, reason=d.reason, flags=d.flags,
+            need=d.need, offer=d.offer, reason=d.reason, flags=flags, icap=icap,
+        )
+
+    # Builds the shared ICAPBrief from code facts (+ the model's requested next action).
+    # Args: facts - facts dict; requested - model text; table_check - check of the plan being countered.
+    # Returns: ICAPBrief.
+    def _icap(self, facts: dict, requested: str, table_check: Optional[GroundCheck]) -> ICAPBrief:
+        failed = None
+        if table_check is not None and not table_check.valid:
+            failed = FailedConstraint(
+                rule="gate",
+                evidence=[f"table_plan.ground_check.{v.rule_id}: {v.message}" for v in table_check.violations],
+            )
+        return ICAPBrief(
+            interest=facts["interest"], failed_constraint=failed,
+            alternatives=[Alternative(plan_ref=a["plan_ref"], summary=a["summary"], status="candidate")
+                          for a in facts["alternatives"][:3]],
+            concessions=facts["concessions"], deadline=facts["deadline"],
+            requested_next_action=requested or "see need",
+        )
+
+    # Code override: turns an unacceptable accept into a reject that records why.
+    # Args: facts, round_no, table_check - as above; why - short cause (<= 15 words).
+    # Returns: reject AgentMessage.
+    def _override(self, facts, round_no, table_check, why: str) -> AgentMessage:
+        return AgentMessage(
+            **{"from": "ground"}, round=round_no, action="reject",
+            need="a table plan that passes the Ground check", offer="none",
+            reason=f"Code override: {why}.", flags=[],
+            icap=self._icap(facts, "Middleman: resend the current table plan", table_check),
         )
 
     # Deterministic stand-in when the model gives nothing usable (treated as reject per CLAUDE.md).
-    # Args: why - short cause for the log (<= 30 words).
+    # Args: facts - facts dict; why - short cause for the log.
     # Returns: reject AgentMessage.
-    def _reject(self, state: WorldState, round_no: int, why: str) -> AgentMessage:
+    def _reject(self, facts: dict, round_no: int, why: str) -> AgentMessage:
         return AgentMessage(
-            **{"from": "ground"}, round=round_no, action="reject",
+            **{"from": "ground"}, round=round_no, action="reject", need="a valid Ground reply", offer="none",
             reason=f"Ground gave no valid response: {why}.", flags=[],
+            icap=self._icap(facts, "Middleman: use the table plan or the fallback", None),
         )
 
     # Appends one LLM-call record to memory and, if configured, to the JSONL log.

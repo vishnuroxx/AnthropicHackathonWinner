@@ -1,24 +1,22 @@
-"""Stand-in WorldState for the Ground agent until the shared world.py exists.
+"""Ground agent inputs for one focal flight: stand-in until the shared world.py exists
+(counterpart of agents/pilot_inputs.py).
 
 Real: the DOT 2015 row and the focal tail's next leg (when present).
-Synthetic (seeded, labelled in `provenance`): gate occupancy, crew shift, connecting pax,
-notice time. No outcome columns are ever read: see ALLOWED_COLUMNS.
+Limits (gates, minimum turnaround, spare gates, crew shift, gate-change notice) come from the
+organiser workbook via agents.constraints. Synthetic (seeded, labelled in `provenance`): gate
+occupancy, crew shift start, connecting pax, notice time. No outcome columns are ever read:
+see ALLOWED_COLUMNS.
 """
 import csv
 import random
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from shared.limits import (
-    GROUND_CREW_SHIFT_MIN,
-    WALK_OTHER_TERMINAL_MIN,
-    WALK_SAME_TERMINAL_MIN,
-    AirportLimits,
-    load_airport_limits,
-)
-from shared.schema import hhmm_to_min
+from agents.constraints import REPO, AirportLimits, airport_limits, fuel_crew_rules
+from ground_agent.assumptions import LIMITS_SOURCE, WALK_OTHER_TERMINAL_MIN, WALK_SAME_TERMINAL_MIN
+from ground_agent.timeutil import hhmm_to_min
 
-FLIGHTS_CSV = Path(__file__).resolve().parents[1] / "data" / "raw" / "dot2015" / "flights.csv"
+FLIGHTS_CSV = REPO / "data" / "raw" / "dot2015" / "flights.csv"
 # Whitelist: outcome columns (DEPARTURE_TIME, ARRIVAL_TIME, ARRIVAL_DELAY, ...) are never read.
 ALLOWED_COLUMNS = (
     "AIRLINE", "FLIGHT_NUMBER", "TAIL_NUMBER", "ORIGIN_AIRPORT", "DESTINATION_AIRPORT",
@@ -38,7 +36,7 @@ class BusyWindow:
 class WorldState:
     seed: int
     airport: str
-    limits: AirportLimits
+    limits: AirportLimits  # from the workbook (agents.constraints)
     focal_flight: str
     tail: str
     event_type: str  # "weather" | "late_aircraft"
@@ -51,14 +49,16 @@ class WorldState:
     crew_shift_start_min: int
     connecting_pax: int
     connection_slack_min: int
+    crew_shift_min: int  # workbook: ground crew shift length
+    gate_change_notice_min: int  # workbook: minimum notice before arrival
     gate_busy: dict[str, list[BusyWindow]]
     provenance: dict[str, str] = field(default_factory=dict)
 
-    # Ground crew shift end = start + the workbook's 8 h shift.
+    # Ground crew shift end = start + the workbook's shift length.
     # Returns: minutes from midnight.
     @property
     def crew_shift_end_min(self) -> int:
-        return self.crew_shift_start_min + GROUND_CREW_SHIFT_MIN
+        return self.crew_shift_start_min + self.crew_shift_min
 
 
 # Terminal letter of a gate id such as "C14".
@@ -86,7 +86,7 @@ def _gate_ids(n: int) -> list[str]:
 
 # Reads the whitelisted columns of every flights.csv row.
 # Args: path - CSV path.
-# Returns: list of row dicts containing only ALLOWED_COLUMNS.
+# Returns: generator of row dicts containing only ALLOWED_COLUMNS.
 def _read_rows(path: Path):
     with open(path, newline="") as f:
         for r in csv.DictReader(f):
@@ -119,7 +119,10 @@ def build_world(
         raise LookupError("row is not a weather/late-aircraft disruption")
 
     airport = focal["DESTINATION_AIRPORT"]
-    limits = load_airport_limits(airport)
+    limits = airport_limits()[airport]
+    rules = fuel_crew_rules()
+    shift_min = round(rules.ground_crew_shift_h * 60)
+    notice_min = round(rules.gate_change_notice_min)
     sched_arr = hhmm_to_min(focal["SCHEDULED_ARRIVAL"])
     disrupted_arr = sched_arr + magnitude
     rng = random.Random(seed)
@@ -136,7 +139,9 @@ def build_world(
 
     gates = _gate_ids(limits.gates)
     scheduled_gate = "A12"
-    spares = rng.sample([g for g in gates if terminal_of(g) != terminal_of(scheduled_gate)], limits.spare_gates)
+    spares = rng.sample(
+        [g for g in gates if terminal_of(g) != terminal_of(scheduled_gate)], limits.spare_gates_at_any_time
+    )
     busy: dict[str, list[BusyWindow]] = {g: [] for g in gates}
     for g in gates:
         if g == scheduled_gate or g in spares:
@@ -154,13 +159,14 @@ def build_world(
         scheduled_arrival_min=sched_arr, disrupted_arrival_min=disrupted_arr,
         scheduled_gate=scheduled_gate, now_min=disrupted_arr - 60,
         next_departure_min=next_dep,
-        crew_shift_start_min=disrupted_arr + rng.randint(10, 30) - GROUND_CREW_SHIFT_MIN,
+        crew_shift_start_min=disrupted_arr + rng.randint(10, 30) - shift_min,
         connecting_pax=rng.randint(18, 40), connection_slack_min=rng.randint(8, 20),
+        crew_shift_min=shift_min, gate_change_notice_min=notice_min,
         gate_busy=busy,
         provenance={
             "flight, tail, scheduled times, event type/magnitude": "real (DOT 2015)",
             "next departure": next_src,
-            "gate count, min turnaround, spare gates": limits.source,
-            "gate occupancy, scheduled gate, crew shift, connections, announce time": f"synthetic (seed {seed})",
+            "gate count, min turnaround, spare gates, crew shift, gate-change notice": LIMITS_SOURCE,
+            "gate occupancy, scheduled gate, crew shift start, connections, announce time": f"synthetic (seed {seed})",
         },
     )
