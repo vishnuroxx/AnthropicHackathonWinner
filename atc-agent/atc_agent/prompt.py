@@ -1,4 +1,8 @@
-"""ATC system prompt, derived from the spec (SPEC.md CAP-1..11) and Ryan's ICAP (icap.md). Cached."""
+"""ATC system prompt, derived from the spec (SPEC.md CAP-1..11) and Ryan's ICAP (icap.md). Cached.
+
+Shared with other agents: the message only (docs/agent-alignment.md). Everything else here is private.
+This prompt adds only ATC's role.
+"""
 import json
 
 SYSTEM = """You are the ATC agent in a three-agent disruption negotiation (ATC, Pilot, Ground) for an airline duty manager.

@@ -8,6 +8,9 @@ Split (rubric: technical soundness): code computes every number (`assess_plan`, 
 `pilot_concessions`); Claude only weighs those facts, decides, and explains. Code enforces the red lines
 after the LLM answers (`_enforce`), so an unsafe accept, or an accept of a plan not on the table, can never
 leave this module.
+
+Shared with other agents: the message only (docs/agent-alignment.md). Everything else here is private.
+This module adds only the Pilot's role.
 """
 from __future__ import annotations
 

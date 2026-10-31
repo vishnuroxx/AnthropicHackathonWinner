@@ -5,6 +5,9 @@ AgentMessage (agents/schema.py): the full Plan, the safety flags, and the ICAP b
 concessions, deadline, failed constraint). An accept of a plan that is not on the table, or that
 fails the Ground check, is overridden to `reject` in code (same pattern as the Pilot agent).
 Invalid output is re-asked once, then becomes `reject`.
+
+Shared with other agents: the message only (docs/agent-alignment.md). Everything else here is private.
+This module adds only Ground's role.
 """
 import json
 import time
