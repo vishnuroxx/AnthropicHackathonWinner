@@ -22,6 +22,8 @@ class Option:
     total_system_delay_min: int
     cost_usd: int
     spare_slots_in_hour: int
+    cap_in_hour: int
+    arrivals_in_hour: int
     valid: bool
     violations: list[str]
 
@@ -80,7 +82,8 @@ def build_menu(world: World) -> list[Option]:
         hour = slot // 60
         weather = hour in world.weather_hours
         cap = config.arrival_cap_per_hour(world.dest, weather, world.weather_cut)
-        spare = cap - sum(1 for t in land.values() if int(t // 60) == hour)
+        arrivals = sum(1 for t in land.values() if int(t // 60) == hour)
+        spare = cap - arrivals
         wait = slot - world.focal_earliest_arr_min
         focal_delay = slot - sched
         for lever in ("ground", "hold"):
@@ -91,7 +94,7 @@ def build_menu(world: World) -> list[Option]:
             cost = (ground * config.GROUND_DELAY_COST_PER_MIN + hold * config.HOLDING_COST_PER_MIN
                     + extra * config.EXTRA_FUEL_COST_PER_MIN + knock_min * config.KNOCKON_COST_PER_MIN)
             opt = Option(f"O{len(options) + 1}", min_to_hhmm(slot), ground, hold, extra, focal_delay,
-                         knock_min, knock_n, focal_delay + knock_min, round(cost), spare, True, [])
+                         knock_min, knock_n, focal_delay + knock_min, round(cost), spare, cap, arrivals, True, [])
             options.append(opt)
         seen[slot] = options[-1]
     return options
@@ -104,9 +107,10 @@ def check_slot(plan: dict, menu: list[Option]) -> dict:
     violations = [] if opt is None else list(opt.violations)
     if opt is None:
         violations.append("C-CAP-1: plan not in code-computed arrival menu")
-    cap_ok = opt is not None and opt.valid
+    cap_ok = opt is not None and opt.valid and opt.arrivals_in_hour <= opt.cap_in_hour
     checks = [{"rule_id": "C-CAP-1", "result": "PASS" if cap_ok else "FAIL",
-               "actual": opt.spare_slots_in_hour if opt else None, "limit": 0, "unit": "spare_arrival_slots_in_hour"}]
+               "actual": opt.arrivals_in_hour if opt else None, "limit": opt.cap_in_hour if opt else None,
+               "unit": "arrivals_per_hour"}]
     if plan.get("holding_min") is not None:
         hold, limit = plan["holding_min"], config.HOLDABLE_MIN + (plan.get("extra_fuel_min") or 0)
         checks.append({"rule_id": "C-FUEL-1", "result": "PASS" if hold <= limit else "FAIL",

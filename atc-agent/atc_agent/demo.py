@@ -51,12 +51,18 @@ def main() -> None:
     r1 = agent.propose()
     print("\nROUND 1", json.dumps(r1, indent=1))
 
-    # Stand-in for the middle man: P1 = cheapest valid option (the fallback's choice).
-    p1 = table_plan("P1", "fallback", cheapest_valid(agent.menu), agent.menu)
+    # Stand-in for the middle man (rule 4): P1 = ATC's valid round-1 plan (the only real agent here);
+    # "fallback" only when ATC has no valid round-1 plan.
+    o1 = next((o for o in agent.menu if o.option_id == r1.get("plan_id") and o.valid), None)
+    if r1["action"] == "propose" and r1["status"] == "OK" and o1:
+        p1 = table_plan("P1", "atc", o1, agent.menu)
+    else:
+        p1 = table_plan("P1", "fallback", cheapest_valid(agent.menu), agent.menu)
     pilot = {"from": "pilot", "round": 2, "action": "counter", "flags": [a.flag] if a.flag else [],
              "reason": "stand-in Pilot message (demo only)"}
     r2 = agent.respond(2, p1, p1["check"], [pilot])
-    print(f"\nROUND 2 (table {p1['plan_id']} {p1['plan']['arrival_slot']}, Pilot flags {pilot['flags']})",
+    print(f"\nROUND 2 (table {p1['plan_id']} {p1['plan']['arrival_slot']} by {p1['proposed_by']}/{p1['source_id']}, "
+          f"Pilot flags {pilot['flags']})",
           json.dumps(r2, indent=1))
 
     # Round 3 table: ATC's counter becomes P2; otherwise P1 stays.

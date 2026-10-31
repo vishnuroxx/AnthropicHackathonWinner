@@ -68,6 +68,8 @@ def validate(msg: dict, round_no: int, menu: list[Option], allowed_text: str, fl
     elif action == "reject":
         if not str(msg.get("reason") or "").strip():
             errs.append('"reject" needs a non-empty reason')
+        if msg.get("plan_id") is not None or msg.get("plan") is not None:
+            errs.append('"reject" must have plan_id and plan null')
     if plan.get("gate") is not None or plan.get("divert") not in (False, None):
         errs.append("ATC must not set gate or divert")
 
