@@ -267,7 +267,7 @@ st.markdown('<style>\n.block-container{max-width:1200px;padding-top:2rem}\n.hero
 SIDEBAR_CSS = """<style>
 [data-testid="stSidebar"]{background:linear-gradient(180deg,#0b2545 0%,#13315c 60%,#1d4e89 100%)}
 [data-testid="stSidebar"] *{color:#e6eef8}
-[data-testid="stSidebar"] [data-baseweb="select"] *{color:#1b2a41}
+[data-testid="stSidebar"] [data-baseweb="select"] > div{background:#ffffff1f!important;border:1px solid #ffffff55!important}[data-testid="stSidebar"] [data-baseweb="select"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;fill:#fff}
 .sb-brand{font-size:1.25rem;font-weight:700;margin-bottom:2px}
 .sb-sub{font-size:.8rem;color:#a9c1e0!important;margin-bottom:18px}
 .sb-card{background:#ffffff14;border:1px solid #ffffff22;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:.82rem;line-height:1.5}
