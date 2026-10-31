@@ -7,6 +7,7 @@ optional document (str) and world (dict). Each log entry: round, agent, message{
 plan_id, plan, need, offer, reason, flags}, checker{valid, violations, cost}, table_plan_id.
 """
 import csv
+import html
 import json
 import time
 from datetime import datetime
@@ -209,8 +210,10 @@ def render_summary(res, row):
     cols = st.columns(max(len(last), 1))
     for col, (a, e) in zip(cols, last.items()):
         msg = e.get("message") or {}
-        col.markdown(f"**{TEAM.get(a, a)}** — {ACTIONS.get(msg.get('action'), msg.get('action', ''))}")
-        col.caption(msg.get("reason", ""))
+        color = {"atc": "#1d4e89", "pilot": "#7b1fa2", "ground": "#ef6c00"}.get(a, "#888")
+        col.markdown(f'<div class="team" style="--c:{color}"><b>{TEAM.get(a, a)}</b><br>'
+                     f'{ACTIONS.get(msg.get("action"), msg.get("action", ""))}'
+                     f'<div class="why">{html.escape(msg.get("reason", ""))}</div></div>', unsafe_allow_html=True)
 
 
 # Writes a short plain-English story of the negotiation from the log only (no new facts).
@@ -253,8 +256,7 @@ def plain_explanation(res):
 load_dotenv(ROOT / ".env.local")
 load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="ATC · Pilot · Ground", layout="wide")
-st.title("✈️ Flight Disruption Assistant")
-st.caption("Air traffic control, the pilot and the ground crew agree on a recovery plan. You make the final call.")
+st.markdown('<style>\n.block-container{max-width:1200px;padding-top:2rem}\n.hero{background:linear-gradient(120deg,#0b2545,#13315c 55%,#1d4e89);color:#fff;padding:22px 28px;border-radius:16px;margin-bottom:16px;box-shadow:0 6px 20px #0b254533}\n.hero h1{color:#fff;margin:0;font-size:2rem}\n.hero p{color:#cfe0f5;margin:6px 0 0}\n[data-testid="stMetric"]{background:#fff;border:1px solid #e3e9f1;border-radius:12px;padding:12px 16px;box-shadow:0 1px 4px #0001}\n.team{background:#fff;border:1px solid #e3e9f1;border-left:5px solid var(--c);border-radius:12px;padding:12px 14px;min-height:120px;box-shadow:0 1px 4px #0001;overflow-wrap:anywhere}\n.team b{font-size:1rem}.team .why{color:#556;font-size:.85rem;margin-top:6px}\n</style>' + '<div class="hero"><h1>✈️ Flight Disruption Assistant</h1><p>Air traffic control, the pilot and the ground crew agree on a recovery plan. You make the final call.</p></div>', unsafe_allow_html=True)
 
 with st.sidebar:
     row_id = st.selectbox("Pick a disrupted flight", list(DEMO_ROWS), format_func=lambda k: DEMO_ROWS[k]["label"])
@@ -324,7 +326,7 @@ if res and res.get("row_id") == row_id:
         render_summary(res, row)
     a, b, _ = st.columns([1, 1, 4])
     for label, past, col in (("Approve", "Approved", a), ("Reject", "Rejected", b)):
-        if col.button(label, key=label):
+        if col.button(label, key=label, type="primary" if label == "Approve" else "secondary", width="stretch"):
             st.session_state["approval"] = {"row_id": row_id, "decision": past, "at": datetime.now().isoformat(timespec="seconds")}
             st.session_state["stage"] = 5
             render_stages(stage_slot, 5)
