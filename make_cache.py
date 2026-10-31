@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from demo_rows import DAY, DEMO_ROWS, MONTH, SEED
+from demo_rows import DEMO_ROWS, SEED, row_date
 
 RESULTS = Path(__file__).parent / "results"
 
@@ -19,7 +19,8 @@ RESULTS = Path(__file__).parent / "results"
 # Returns: the result dict.
 def cache_one(row_id, negotiate):
     spec = DEMO_ROWS[row_id]
-    result = negotiate({**spec, "month": MONTH, "day": DAY}, SEED)
+    month, day = row_date(spec)
+    result = negotiate({**spec, "month": month, "day": day}, SEED)
     result["row_id"] = row_id
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / f"{row_id}.json").write_text(json.dumps(result, indent=2, default=str))

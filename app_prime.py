@@ -16,7 +16,7 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 
-from demo_rows import DAY, DEMO_ROWS, MONTH, SEED
+from demo_rows import DAY, DEMO_ROWS, MONTH, SEED, row_date
 
 ROOT = Path(__file__).parent
 RESULTS = ROOT / "results"
@@ -78,11 +78,11 @@ def hhmm(v):
 # Args: spec - a DEMO_ROWS entry.
 # Returns: dict of SHOWN_COLS, or None if the row is missing.
 @st.cache_data(show_spinner=False)
-def load_row(airline, flight_number, origin):
+def load_row(airline, flight_number, origin, month=MONTH, day=DAY):
     with open(FLIGHTS, newline="") as f:
         for r in csv.DictReader(f):
             if (r["MONTH"], r["DAY"], r["AIRLINE"], r["FLIGHT_NUMBER"], r["ORIGIN_AIRPORT"]) == (
-                    str(MONTH), str(DAY), airline, flight_number, origin):
+                    str(month), str(day), airline, flight_number, origin):
                 return {c: r[c] for c in SHOWN_COLS}
     return None
 
@@ -90,15 +90,15 @@ def load_row(airline, flight_number, origin):
 # Gathers the key constraints (holdable fuel, gate, slot capacity) from the agents' world builders.
 # Returns: list of (label, value) pairs; empty if the builders fail.
 @st.cache_data(show_spinner=False)
-def key_constraints(airline, flight_number, origin):
+def key_constraints(airline, flight_number, origin, month=MONTH, day=DAY):
     try:
         from agents.constraints import fuel_crew_rules
         from agents.pilot import fuel_budget
         from agents.pilot_inputs import build_pilot_inputs
         from ground_agent.inputs import build_world
-        w = build_world(airline, flight_number, MONTH, DAY, origin, SEED)
-        raw = load_row(airline, flight_number, origin)
-        fuel = fuel_budget(build_pilot_inputs({**raw, "MONTH": str(MONTH), "DAY": str(DAY), "YEAR": "2015"}, SEED),
+        w = build_world(airline, flight_number, month, day, origin, SEED)
+        raw = load_row(airline, flight_number, origin, month, day)
+        fuel = fuel_budget(build_pilot_inputs({**raw, "MONTH": str(month), "DAY": str(day), "YEAR": "2015"}, SEED),
                            fuel_crew_rules())
         free = [g for g, ws in w.gate_busy.items() if not ws]
         return [
@@ -376,7 +376,7 @@ st.markdown(PAGE_CSS + '<div class="hero"><div><h1>Flight Disruption Assistant b
             unsafe_allow_html=True)
 
 with st.sidebar:
-    st.markdown('<div class="sb-brand">AutonomousPrime</div><div class="sb-sub">Duty manager console · DFW · 24 Apr 2015</div>',
+    st.markdown('<div class="sb-brand">AutonomousPrime</div><div class="sb-sub">Duty manager console · DOT 2015 disruptions</div>',
                 unsafe_allow_html=True)
     row_id = st.selectbox("Disrupted flight", list(DEMO_ROWS), format_func=lambda k: DEMO_ROWS[k]["label"])
     use_cache = st.toggle("Replay saved run", value=True,
@@ -394,7 +394,7 @@ stage_slot = st.empty()
 render_stages(stage_slot, st.session_state["stage"])
 
 # 3. Disruption panel
-row = load_row(spec["airline"], spec["flight_number"], spec["origin"])
+row = load_row(spec["airline"], spec["flight_number"], spec["origin"], *row_date(spec))
 st.subheader("What happened")
 if row is None:
     st.error("Row not found in flights.csv")
@@ -406,11 +406,11 @@ c1.metric("Problem", event)
 c2.metric("Flight", f"{row['AIRLINE']}{row['FLIGHT_NUMBER']} · {row['TAIL_NUMBER']}")
 c3.metric("Route", f"{row['ORIGIN_AIRPORT']} → {row['DESTINATION_AIRPORT']}")
 st.write(f"Was due to leave at **{hhmm(row['SCHEDULED_DEPARTURE'])}** and land at **{hhmm(row['SCHEDULED_ARRIVAL'])}** "
-         f"on {DAY} Apr 2015 (real flight record).")
+         f"on {datetime(2015, *row_date(spec)).strftime('%d %b %Y').lstrip('0')} (real flight record).")
 with st.expander("Limits we have to respect"):
     cells = []
     with st.spinner("Loading limits…"):
-        limits = key_constraints(spec["airline"], spec["flight_number"], spec["origin"])
+        limits = key_constraints(spec["airline"], spec["flight_number"], spec["origin"], *row_date(spec))
     for label, val in limits:
         sim = "(synthetic)" in val
         clean = html.escape(val.replace(" (synthetic)", "").replace(" (derived)", "").replace(" (workbook)", ""))
