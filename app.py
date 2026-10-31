@@ -335,6 +335,7 @@ if st.button("Find a recovery plan", type="primary"):
                 res = run_live(row_id)
         if res:
             st.session_state.update(result=res, stage=3)
+            st.toast("Recommendation ready: scroll down to review and approve", icon="🔔")
             st.session_state.pop("approval", None)
     except ImportError as e:
         st.error(f"Negotiation backend not available: {e}")
