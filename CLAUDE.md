@@ -3,7 +3,7 @@
 Six-hour hackathon build (Sat 31 Oct 2026). Goal: one agent that visibly completes a real, multi-step Singapore task end to end, with a human approval step and a tangible output (report, filled form, drafted email). Optimise for a working demo, not production quality.
 
 ## Problem
-Airbus track, Challenge #2 (multi-agent disruption negotiation). **Read `docs/challenge-2-brief.md` (brief + rubric) and `docs/challenge-2-framing.md` (design) before building.** Research behind it: `docs/research/`.
+Airbus track, Challenge #2 (multi-agent disruption negotiation). **Read `docs/challenge-2-brief.md` (brief + rubric) and `docs/challenge-2-framing.md` (design) before building.**
 User: airline OCC duty manager at a US hub. Three separate Claude agents (ATC, Pilot, Ground) negotiate over code-generated, code-checked recovery options for a real DOT 2015 disruption; ≤3 turns; deterministic fallback; JSONL consensus log. Claude negotiates and explains; code computes all numbers, checks every constraint and decides termination.
 
 ## Stack

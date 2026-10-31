@@ -1,6 +1,6 @@
 # Challenge #2 framing: negotiated disruption recovery
 
-Synthesis of four research reports (`docs/research/01–04`), written 31 Oct 2026. The brief and rubric are in `docs/challenge-2-brief.md`. Where reports disagreed, the choice made is noted.
+Synthesis of four research reports (domain and constraints, literature, Claude implementation, data and evaluation), written 31 Oct 2026. The brief and rubric are in `docs/challenge-2-brief.md`. Where reports disagreed, the choice made is noted.
 
 ## Change log
 **31 Oct, after the organisers' data arrived.** The research assumed the full 5.8M-row 2015 DOT dataset. The organisers provided a **pre-filtered 358,774-row subset** containing only rows that meet the brief's delay filter. As a result:
@@ -9,9 +9,6 @@ Synthesis of four research reports (`docs/research/01–04`), written 31 Oct 202
 3. **No diversion or cancellation options.** *Why:* the data has none to ground or evaluate them.
 4. **Times are zero-padded strings with `2400`**; no October and no numeric airport codes, so that handling was dropped. *Why:* the export differs from the Kaggle version.
 5. **Reconciled conflicts between reports:** 3 NM minimum separation is a stated assumption (ICAO default 5 NM); 25 kg/min holding burn is the default (~38 kg/min upper bound); ICAO values are used on US data, and this is disclosed.
-
-The full what-was-assumed / why-it-failed / what-changed tables are in the Amendments section at the top of each `docs/research/0x-*.md` file.
-
 ## 1. Problem statement
 
 **User.** An airline Operations Control Centre (OCC) duty manager at a US hub. When capacity drops, they coordinate with the FAA traffic management coordinator (TMC) and the ramp / ground-handling supervisor.
@@ -196,4 +193,17 @@ These are tagged with MAST categories (Cemri 2025).
 - Whether greedy/CP-SAT options are good enough that the agents add value; if B2 always wins, the story becomes faster agreement plus trade-offs explained, not lower delay.
 
 ## Key citations
-Kambhampati et al. 2024 (LLM-Modulo) · Ye et al. 2023 (SatLM) · AhmadiTeshnizi et al. 2024 (OptiMUS) · Abdelnabi et al. 2024 · Bianchi et al. 2024 (NegotiationArena) · Fu et al. 2023 · Yao et al. 2025 (sycophancy) · Cemri et al. 2025 (MAST) · Endriss 2006 (monotonic concession) · Vossen & Ball 2006 (GDP mediated bartering) · Andriuškevičius & Sun 2024 (LLM ATC agents) · NASA Ames 2026 (LLM human-machine teaming in ATM) · Anthropic "Building effective agents" and multi-agent research system. URLs are in `docs/research/02-literature.md`.
+- Kambhampati et al. 2024, LLM-Modulo: https://arxiv.org/abs/2402.01817
+- Ye et al. 2023, SatLM: https://arxiv.org/abs/2305.09656
+- AhmadiTeshnizi et al. 2024, OptiMUS: https://arxiv.org/abs/2402.10172
+- Abdelnabi et al. 2024, LLM-stakeholder negotiation: https://arxiv.org/abs/2309.17234
+- Bianchi et al. 2024, NegotiationArena: https://arxiv.org/abs/2402.05863
+- Fu et al. 2023, self-play negotiation: https://arxiv.org/abs/2305.10142
+- Yao et al. 2025, sycophancy in multi-agent debate: https://arxiv.org/abs/2509.23055
+- Cemri et al. 2025, MAST (why multi-agent systems fail): https://arxiv.org/abs/2503.13657
+- Endriss 2006, monotonic concession protocols: https://eprints.illc.uva.nl/176/
+- Vossen & Ball 2006, mediated bartering for Ground Delay Programs: https://ideas.repec.org/a/wly/navres/v53y2006i1p75-90.html
+- Andriuškevičius & Sun 2024, LLM air traffic agents: https://arxiv.org/abs/2409.09717
+- NASA Ames 2026, LLM human-machine teaming in ATM: https://ntrs.nasa.gov/citations/20250011241
+- Anthropic, Building effective agents: https://www.anthropic.com/engineering/building-effective-agents
+- Anthropic, multi-agent research system: https://www.anthropic.com/engineering/multi-agent-research-system

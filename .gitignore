@@ -32,3 +32,6 @@ data/*
 !data/raw/
 data/raw/*
 !data/raw/dot2015/
+
+# Research notes kept local only
+docs/research/
