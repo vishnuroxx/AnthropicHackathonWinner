@@ -32,6 +32,7 @@ data/*
 !data/raw/
 data/raw/*
 !data/raw/dot2015/
+!data/raw/challenge2/
 
 # Research notes kept local only
 docs/research/
