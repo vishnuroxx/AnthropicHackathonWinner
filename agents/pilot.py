@@ -202,21 +202,24 @@ def pilot_facts(inp: PilotInputs, plans: dict[str, Plan], rules: FuelCrewRules |
 
 # ---------------------------------------------------------------- agent (Claude)
 class PilotAgent:
-    def __init__(self, client: anthropic.Anthropic | None = None, model: str = MODEL, effort: str = EFFORT,
+    """Async: the middleman runs the three agents concurrently each round, e.g.
+    `await asyncio.gather(atc.respond(...), pilot.respond(...), ground.respond(...))`."""
+
+    def __init__(self, client: anthropic.AsyncAnthropic | None = None, model: str = MODEL, effort: str = EFFORT,
                  dry_run: bool = False):
         self.dry_run = dry_run
-        self.client = None if dry_run else (client or anthropic.Anthropic())
+        self.client = None if dry_run else (client or anthropic.AsyncAnthropic())
         self.model, self.effort = model, effort
         self.calls: list[dict] = []      # per-call log for the consensus log / evaluation
 
-    def propose(self, inp: PilotInputs, candidates: dict[str, Plan], round_: int = 1) -> AgentMessage:
+    async def propose(self, inp: PilotInputs, candidates: dict[str, Plan], round_: int = 1) -> AgentMessage:
         facts = pilot_facts(inp, candidates)
         task = ("Round 1. Assess the candidate plans in `plans` and the code-generated `alternatives`, then propose "
                 "the plan you want on the table (action 'propose', include the full plan). Prefer the top-ranked "
                 "alternative unless a fact in FACTS argues otherwise. Fill `icap`.")
-        return self._run(inp, facts, task, round_, candidates)
+        return await self._run(inp, facts, task, round_, candidates)
 
-    def respond(self, inp: PilotInputs, table_id: str, table: Plan, checker: dict, others: list[dict],
+    async def respond(self, inp: PilotInputs, table_id: str, table: Plan, checker: dict, others: list[dict],
                 round_: int) -> AgentMessage:
         facts = pilot_facts(inp, {table_id: table})
         task = (f"Round {round_}. The plan on the table is {table_id}. Constraint checker result: "
@@ -224,18 +227,18 @@ class PilotAgent:
                 f"Check {table_id} against your own facts even if others prefer it. Reply with 'accept' "
                 f"(plan_id={table_id}, this exact plan only), 'counter' (include your full counter-plan, "
                 "ideally from `alternatives`), or 'reject'. Fill `icap`.")
-        return self._run(inp, facts, task, round_, {table_id: table})
+        return await self._run(inp, facts, task, round_, {table_id: table})
 
     # -- internals
-    def _run(self, inp, facts, task, round_, plans) -> AgentMessage:
-        msg = self._policy(inp, facts, round_) if self.dry_run else self._ask_claude(facts, task, round_)
+    async def _run(self, inp, facts, task, round_, plans) -> AgentMessage:
+        msg = self._policy(inp, facts, round_) if self.dry_run else await self._ask_claude(facts, task, round_)
         return self._enforce(msg, inp, round_, plans)
 
-    def _ask_claude(self, facts: dict, task: str, round_: int) -> AgentMessage:
+    async def _ask_claude(self, facts: dict, task: str, round_: int) -> AgentMessage:
         messages = [{"role": "user", "content": f"FACTS (computed by code):\n{json.dumps(facts, indent=1)}\n\nTASK: {task}"}]
         for attempt in (1, 2):           # re-ask once, then treat as reject (CLAUDE.md section 5)
             try:
-                resp = self.client.messages.parse(
+                resp = await self.client.messages.parse(
                     model=self.model, max_tokens=4000,
                     system=[{"type": "text", "text": PROMPT, "cache_control": {"type": "ephemeral"}}],
                     messages=messages, output_format=AgentMessage, output_config={"effort": self.effort},
@@ -312,9 +315,9 @@ class PilotAgent:
                     break
         chosen = msg.plan if msg.action in ("propose", "counter") else plans.get(msg.plan_id or "")
         if chosen is None:
-            return msg.model_copy(update={"icap": icap})
+            return msg.model_copy(update={"icap": icap, "flags": []})
         a = assess_plan(msg.plan_id or "own", chosen, inp, rules)
-        flags = set(msg.flags)
+        flags = set()                     # safety flags are code-derived only; LLM-supplied flags are dropped
         if a.minimum_fuel:
             flags.add("MINIMUM_FUEL")
         if not a.duty_ok:

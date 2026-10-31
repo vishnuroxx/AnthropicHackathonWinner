@@ -1,5 +1,8 @@
 """Pilot agent tests. No API calls (dry-run policy). Run: .venv/bin/python -m tests.test_pilot"""
+import asyncio
 import csv
+import time
+from types import SimpleNamespace
 
 from agents.constraints import fuel_crew_rules
 from agents.pilot import (PilotAgent, assess_plan, fuel_budget, pilot_alternatives, pilot_concessions,
@@ -57,7 +60,7 @@ def test_duty_limit():
 def test_dry_run_prefers_safe_ground_delay_over_unsafe_holding():
     agent = PilotAgent(dry_run=True)
     cands = {"P1": plan("17:55", hold=25), "P2": plan("17:55", gd=25), "P3": plan("18:30", gd=60)}
-    msg = agent.propose(INP, cands)
+    msg = asyncio.run(agent.propose(INP, cands))
     assert msg.action == "propose" and msg.plan.ground_delay_min == 25 and msg.plan.holding_min == 0
 
 
@@ -103,13 +106,47 @@ def test_concessions_never_include_safety():
 
 def test_dry_run_and_override_carry_icap():
     agent = PilotAgent(dry_run=True)
-    msg = agent.propose(INP, {"P1": plan("17:55", hold=25), "P3": plan("18:30", gd=60)})
+    msg = asyncio.run(agent.propose(INP, {"P1": plan("17:55", hold=25), "P3": plan("18:30", gd=60)}))
     assert msg.icap and msg.icap.interest and msg.icap.alternatives and msg.icap.deadline
     assert msg.icap.alternatives[0].status == "candidate"
     over = agent._enforce(AgentMessage(**{"from": "pilot"}, round=2, action="accept", plan_id="P1",
                                        need="-", offer="-", reason="ok"), INP, 2, {"P1": plan("17:55", hold=25)})
     assert over.icap.failed_constraint.rule == "fuel"
     assert any("fuel_margin_min=" in e for e in over.icap.failed_constraint.evidence)
+
+
+def test_llm_supplied_safety_flag_is_dropped_when_code_disagrees():
+    # Live run: Claude flagged MINIMUM_FUEL on a counter-plan with an 18.3-min margin (threshold 10).
+    agent = PilotAgent(dry_run=True)
+    llm = AgentMessage(**{"from": "pilot"}, round=2, action="counter", plan=plan("17:55", gd=25),
+                       need="-", offer="-", reason="P1 fails fuel", flags=["MINIMUM_FUEL"])
+    msg = agent._enforce(llm, INP, 2, {"P1": plan("17:55", hold=25)})
+    assert msg.action == "counter" and msg.flags == []
+    assert msg.icap.failed_constraint.rule == "fuel"          # the table plan's failure is still recorded
+
+
+class _SlowFakeMessages:
+    """Fake async client: every call takes 0.3 s and returns a valid counter (no network)."""
+    async def parse(self, **kw):
+        await asyncio.sleep(0.3)
+        msg = AgentMessage(**{"from": "pilot"}, round=2, action="counter", plan=plan("17:55", gd=25),
+                           need="ATC confirm slot", offer="ground delay", reason="fuel")
+        return SimpleNamespace(parsed_output=msg, stop_reason="end_turn", _request_id="fake",
+                               usage=SimpleNamespace(model_dump=lambda: {}))
+
+
+def test_agents_run_concurrently_not_sequentially():
+    fake = SimpleNamespace(messages=_SlowFakeMessages())
+    agents = [PilotAgent(client=fake) for _ in range(3)]       # stand-ins for ATC, Pilot, Ground
+
+    async def one_round():
+        return await asyncio.gather(*(a.respond(INP, "P1", plan("17:55", hold=25), {"valid": True}, [], 2)
+                                      for a in agents))
+    t0 = time.perf_counter()
+    replies = asyncio.run(one_round())
+    elapsed = time.perf_counter() - t0
+    assert len(replies) == 3 and all(r.action == "counter" for r in replies)
+    assert elapsed < 0.6, f"calls ran sequentially ({elapsed:.2f}s for 3 x 0.3s)"
 
 
 def test_real_row_dfw_demo_day():
