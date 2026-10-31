@@ -210,6 +210,29 @@ def render_summary(res, row):
         col.caption(msg.get("reason", ""))
 
 
+# Writes a short plain-English story of the negotiation from the log only (no new facts).
+def plain_explanation(res):
+    log, p = res.get("log", []), res.get("final_plan") or {}
+    out = ["#### What we recommend", f"**{plan_line(p)}**."]
+    first = [e for e in log if e["round"] == 1]
+    if first:
+        out.append("#### What each team wanted first")
+        for e in first:
+            out.append(f"- {TEAM.get(e['agent'], e['agent'])}: {plan_line((e.get('message') or {}).get('plan'))}")
+    out.append("#### How they settled")
+    out.append("Any plan that broke a safety rule (fuel, gate, runway slots, crew hours) was thrown out "
+               "automatically, so no team ever saw an unsafe option. Each team then rated the safe options, "
+               "and the plan with the best balance for all three, at a reasonable cost, went to a final vote.")
+    if res.get("outcome") == "consensus":
+        out.append(f"All three teams said **yes** in round {res.get('rounds')}, and a final safety check passed.")
+    else:
+        out.append("The teams did not all agree, so the system picked the cheapest safe plan by rule (no AI).")
+    out.append("#### Good to know")
+    out.append("Flight times and delays are real 2015 records. Gate bookings, crew shifts and connecting "
+               "passengers are simulated for the demo. All numbers are calculated by code, not by the AI.")
+    return "\n\n".join(out)
+
+
 load_dotenv(ROOT / ".env.local")
 load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="ATC · Pilot · Ground", layout="wide")
@@ -293,8 +316,10 @@ if res and res.get("row_id") == row_id:
         st.info(f"{d['decision']} at {d['at']}")
 
     # 7. Supporting detail, collapsed by default
-    with st.expander("Read the full explanation"):
-        st.markdown(res.get("document") or template_document(res))
+    with st.expander("Why this plan? (plain-English explanation)", expanded=True):
+        st.markdown(plain_explanation(res))
+        if st.toggle("Show the technical decision record", key="techdoc"):
+            st.markdown(res.get("document") or template_document(res))
     with st.expander("Show every message (audit trail)"):
         render_log(res.get("log", []))
 
