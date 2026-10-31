@@ -121,8 +121,24 @@ def assess_plan(plan_id: str, plan: Plan, inp: PilotInputs, rules: FuelCrewRules
 
 
 def _rank_key(a: PlanAssessment):
-    """Priority order among feasible plans: divert is a last resort, then fuel, then connections, then fuel burn."""
-    return (a.divert, a.minimum_fuel, a.pax_missed, a.holding_fuel_kg)
+    """Strict priority order among feasible plans (lexicographic, no weights: nothing lower can buy back
+    anything higher): avoid diverting, avoid a minimum-fuel margin, avoid stranding last-of-day passengers,
+    fewer missed connecting pax, less holding fuel burn."""
+    return (a.divert, a.minimum_fuel, len(a.last_of_day_missed), a.pax_missed, a.holding_fuel_kg)
+
+
+def pilot_red_lines(inp: PilotInputs, rules: FuelCrewRules) -> list[str]:
+    """Hard limits stated up front, so ATC and Ground can propose within them. Computed by code."""
+    fb = fuel_budget(inp, rules)
+    duty_end = (to_min(inp.crew_report) + int(rules.flight_crew_max_duty_h * 60)) % 1440
+    return [
+        f"Fuel: never plan below the {fb.final_reserve_min:g}-min final reserve",
+        f"Holding: at most {fb.holdable_before_divert_min} min without extra fuel; beyond that, divert to "
+        f"{inp.alternate.iata} ({fb.alternate_fuel_min} min away)",
+        f"Minimum fuel declared if margin falls below {ASSUMPTIONS['minimum_fuel_margin_min']:g} min",
+        f"Crew duty: block-in by {duty_end // 60:02d}:{duty_end % 60:02d} {inp.origin} time "
+        f"({rules.flight_crew_max_duty_h:g} h from report {inp.crew_report})",
+    ]
 
 
 def pilot_alternatives(inp: PilotInputs, plans: dict[str, Plan], rules: FuelCrewRules) -> list[dict]:
@@ -189,6 +205,7 @@ def pilot_facts(inp: PilotInputs, plans: dict[str, Plan], rules: FuelCrewRules |
                   "note": "weather at destination: airborne holding is near the weather; ground delay avoids it"
                   if inp.event_type == "weather" else "late inbound aircraft: departure readiness is late"},
         "interest": INTERESTS[inp.event_type],
+        "red_lines": pilot_red_lines(inp, rules),
         "fuel": {**asdict(fb), "rule_source": rules.source,
                  "minimum_fuel_margin_min": ASSUMPTIONS["minimum_fuel_margin_min"]},
         "alternate": asdict(inp.alternate),
@@ -304,6 +321,7 @@ class PilotAgent:
         rules = fuel_crew_rules()
         msg = msg.model_copy(update={"from_": "pilot", "round": round_})
         icap = msg.icap or ICAPBrief(interest=INTERESTS[inp.event_type], requested_next_action="see need")
+        icap = icap.model_copy(update={"red_lines": pilot_red_lines(inp, rules)})   # code-derived, always stated
         if msg.action == "accept" and msg.plan_id not in plans:
             return msg.model_copy(update={
                 "action": "reject", "plan_id": None, "plan": None, "need": "confirm the plan id and version on the table",
