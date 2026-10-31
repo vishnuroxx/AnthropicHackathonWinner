@@ -6,9 +6,9 @@ import httpx2
 import pytest
 from pydantic import ValidationError
 
-from agents.ground import GroundAgent, GroundDecision, assert_no_hindsight, baseline_plan, build_ground_facts
-from checker_ground import check_ground
-from tests.test_checker_ground import make_state
+from ground_agent.agent import GroundAgent, GroundDecision, assert_no_hindsight, baseline_plan, build_ground_facts
+from ground_agent.checker import check_ground
+from ground_agent.tests.helpers import make_state
 
 
 # Builds a GroundDecision with sensible defaults.

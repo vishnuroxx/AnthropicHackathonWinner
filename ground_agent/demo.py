@@ -1,7 +1,7 @@
 """Terminal demo of the Ground agent on the real DFW 24 Apr 2015 weather row (AA1480 MCI->DFW).
 
 Stub table plan only: the real ATC/Pilot agents and the middleman belong to other lanes.
-Usage: .venv/bin/python run_ground_demo.py
+Usage: .venv/bin/python -m ground_agent.demo
 """
 import asyncio
 import json
@@ -10,13 +10,13 @@ from pathlib import Path
 import anthropic
 from dotenv import load_dotenv
 
-from agents.ground import GroundAgent, baseline_plan
-from checker_ground import check_ground
-from cost_ground import cost_ground
-from schema import min_to_hhmm
-from world_fixture import build_world
+from ground_agent.agent import GroundAgent, baseline_plan
+from ground_agent.checker import check_ground
+from ground_agent.cost import cost_ground
+from shared.schema import min_to_hhmm
+from shared.world_fixture import build_world
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).resolve().parents[1]
 
 
 # Prints a plan's Ground check and cost, all computed by code.
