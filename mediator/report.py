@@ -89,8 +89,8 @@ def render(log_path: Path) -> str:
                 out.append(f"Runner-up {r['source_id']}: {_plan(r['plan'])}; cost ${r['cost_usd']:,.0f}.")
         else:
             out += [f"**No valid plan: recommend cancellation to the human** ({d.get('note', '')})."]
-        out.append("Note: the fallback uses its own world model (fallback/world.py), so its gates and costs can "
-                   "differ from the agents' views.")
+        out.append("Note: the fallback searches the same slot menu and gates with the same checker and cost "
+                   "as the negotiation, so its plan passes the same safety check.")
 
     out += ["", "## Human decision", "", "The duty manager approves or rejects this recommendation. "
             "Every line above is in the machine log:", "", f"`{log_path}`", ""]

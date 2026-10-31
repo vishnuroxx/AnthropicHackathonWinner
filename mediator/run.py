@@ -44,10 +44,9 @@ def main() -> None:
     out = asyncio.run(run_negotiation(agents, lambda pl: check_plan(s, pl), lambda pl: plan_cost(s, pl), log, context))
     fb = None
     if out.outcome != "consensus":                    # deterministic non-AI fallback (fallback/ lane)
-        from fallback.solver import solve
-        from fallback.world import build_world as build_fallback_world
+        from fallback.scenario import solve_scenario   # same menu, gates and checker as the negotiation
         trigger = "no_valid_r1" if out.outcome == "no_valid_plan" else "no_consensus_r3"
-        fb = solve(build_fallback_world(rows, s.focal_row, a.seed), trigger)
+        fb = solve_scenario(s, trigger)
         log.write(3, "fallback", trigger=trigger, outcome=fb["outcome"], plan=fb["plan"], cost_usd=fb["cost_usd"],
                   total_system_delay_min=fb["total_system_delay_min"], detail=fb["fallback"])
     report = write_report(log.path)
